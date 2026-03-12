@@ -364,12 +364,11 @@ let allItems = [];
 let activeTypeFilter = 'all';
 let activeTAFilter = null;
 let activeCompany = null;
-let apiKey = '';
+const PROXY_URL = 'https://lumos-proxy.drake-p-s-4-twitch.workers.dev/';
 let countdown = REFRESH_INTERVAL;
 let countdownTimer = null;
 let lastFetchCount = 0;
 
-const HARDCODED_KEY = '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';
 const APP_PASSWORD = 'KKImmunoCILumos';
 
 function init() {
@@ -492,9 +491,9 @@ Return ONLY valid JSON — no markdown, no explanation, no preamble. Format:
 }`
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch(PROXY_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 8000,
@@ -525,9 +524,9 @@ Return ONLY valid JSON — no markdown, no explanation, no preamble. Format:
       }));
       messages.push({ role: 'user', content: toolResults });
 
-      const followUp = await fetch('https://api.anthropic.com/v1/messages', {
+      const followUp = await fetch(PROXY_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 8000,
