@@ -1,0 +1,3454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUMOS — Competitive Intelligence Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111;
+    --surface2: #161616;
+    --border: #2a2a2a;
+    --border-mid: #3a3a3a;
+    --box: #161616;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --text: #f5f5f5;
+    --text-secondary: #aaa;
+    --muted: #666;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 17px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+  }
+
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-name { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; color: var(--text); letter-spacing: 4px; text-transform: uppercase; }
+  .logo-tag { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-secondary); letter-spacing: 2px; text-transform: uppercase; border: 1px solid #2a2a2a; padding: 2px 7px; border-radius: 2px; }
+
+  .header-right { display: flex; align-items: center; gap: 20px; }
+  .last-updated { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text-secondary); }
+  .last-updated span { color: var(--text-secondary); }
+
+  .live-badge { display: flex; align-items: center; gap: 6px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--green); letter-spacing: 2px; }
+  .pulse-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.7)} }
+
+  .refresh-btn { background: var(--surface2); border: 1px solid var(--border-mid); color: var(--text); padding: 8px 18px; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .2s; text-transform: uppercase; }
+  .refresh-btn:hover { border-color: var(--text-secondary); color: var(--text); }
+  .refresh-btn.loading { opacity: .4; pointer-events: none; }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+
+
+  /* ── COMPANY LOGOS ── */
+  .company-logo-img {
+    width: 28px; height: 28px; border-radius: 4px;
+    object-fit: contain; background: #fff; padding: 2px;
+    flex-shrink: 0;
+  }
+  .company-logo-sm {
+    width: 20px; height: 20px; border-radius: 3px;
+    object-fit: contain; background: #fff; padding: 1px;
+    flex-shrink: 0;
+  }
+  .company-logo-wrap {
+    display: flex; align-items: center; gap: 8px;
+  }
+  /* ── TICKER ── */
+  .ticker-bar {
+    position: sticky; top: 64px; z-index: 98;
+    background: #0a0f12;
+    border-bottom: 1px solid var(--border);
+    height: 36px;
+    display: flex; align-items: center;
+    overflow: hidden;
+  }
+  .ticker-label {
+    flex-shrink: 0;
+    font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 600;
+    letter-spacing: 2.5px; text-transform: uppercase;
+    color: var(--accent);
+    background: #0a0f12;
+    border-right: 1px solid var(--border);
+    padding: 0 14px;
+    height: 100%; display: flex; align-items: center;
+    z-index: 2;
+    white-space: nowrap;
+  }
+  .ticker-track-wrap {
+    flex: 1; overflow: hidden; position: relative; height: 100%;
+  }
+  .ticker-track {
+    display: flex; align-items: center;
+    white-space: nowrap;
+    height: 100%;
+    animation: ticker-scroll 60s linear infinite;
+    will-change: transform;
+  }
+  .ticker-track:hover { animation-play-state: paused; }
+  @keyframes ticker-scroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .ticker-item {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 0 28px;
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--text-secondary);
+    cursor: default;
+    border-right: 1px solid var(--border);
+    height: 100%;
+    transition: color .15s;
+    white-space: nowrap;
+  }
+  .ticker-item:hover { color: var(--text); }
+  .ticker-company {
+    font-weight: 600; color: var(--text); letter-spacing: .5px;
+  }
+  .ticker-dot {
+    width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+  }
+  .ticker-sep {
+    display: inline-block; padding: 0 16px;
+    color: var(--border-mid); font-size: 16px; user-select: none;
+  }
+  .ticker-empty {
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--muted); padding: 0 20px; letter-spacing: 1px;
+  }
+
+  /* ── LAYOUT ── */
+  .layout { display: grid; grid-template-columns: 270px 1fr; min-height: calc(100vh - 60px); }
+
+  /* ── SIDEBAR ── */
+  aside {
+    border-right: 1px solid var(--border);
+    padding: 28px 0;
+    background: var(--surface);
+    overflow-y: auto;
+    max-height: calc(100vh - 100px);
+    position: sticky;
+    top: 100px;
+  }
+
+  .sidebar-section { margin-bottom: 36px; padding: 0 22px; }
+
+  .sidebar-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; letter-spacing: 2px;
+    color: var(--text);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+
+  /* Filter chips — plain text rows, no backgrounds */
+  .filter-chip {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 0;
+    cursor: pointer;
+    border: none;
+    border-bottom: 1px solid transparent;
+    transition: all .15s;
+    font-size: 15px;
+    color: var(--text-secondary);
+    user-select: none;
+    background: none;
+  }
+  .filter-chip:hover { color: var(--text); }
+  .filter-chip.active { color: var(--text); border-bottom-color: transparent; }
+  .filter-chip.active .chip-label { border-bottom: 1px solid var(--text); padding-bottom: 1px; }
+
+  .chip-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border-mid);
+    padding: 2px 9px;
+    border-radius: 4px;
+    min-width: 28px;
+    text-align: center;
+  }
+  .filter-chip.active .chip-count { color: var(--text-secondary); border-color: var(--border-mid); }
+
+  /* TA pills */
+  .ta-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+  .ta-pill { font-family: 'DM Mono', monospace; font-size: 13px; padding: 7px 14px; border-radius: 4px; border: 1px solid var(--border-mid); cursor: pointer; transition: all .15s; color: var(--text-secondary); user-select: none; white-space: nowrap; letter-spacing: .5px; }
+  .ta-pill:hover { border-color: var(--text-secondary); color: var(--text); }
+  .ta-pill.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.07); }
+
+  /* Company items */
+  .company-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; cursor: pointer; font-size: 15px; transition: color .15s; color: var(--text-secondary); }
+  .company-item:hover { color: var(--text); }
+  .company-item.active { color: var(--text); }
+  .company-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .company-name { flex: 1; }
+  .ir-link-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 3px;
+    border: 1px solid var(--border); color: var(--muted);
+    text-decoration: none; flex-shrink: 0;
+    transition: all .15s; opacity: 0;
+  }
+  .company-item:hover .ir-link-btn { opacity: 1; }
+  .ir-link-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.08); }
+
+  /* Next refresh box — boxed for contrast */
+  .next-refresh {
+    background: var(--box);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
+  }
+  .next-refresh-label { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+  .countdown { font-family: 'DM Mono', monospace; font-size: 26px; color: var(--text); letter-spacing: 3px; }
+  .progress-bar { height: 1px; background: var(--border); margin-top: 12px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--text-secondary); transition: width 1s linear; }
+
+  /* ── MAIN ── */
+  main { padding: 28px 32px; background: var(--bg); }
+
+  .new-items-banner { display: none; border: 1px solid var(--border-mid); border-radius: 4px; padding: 12px 18px; margin-bottom: 20px; font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text-secondary); cursor: pointer; text-align: center; transition: all .2s; letter-spacing: 1px; }
+  .new-items-banner:hover { border-color: var(--text-secondary); color: var(--text); }
+
+  .main-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .results-info { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text-secondary); letter-spacing: 1px; }
+  .results-info strong { color: var(--text-secondary); }
+
+  .sort-select { background: var(--surface2); border: 1px solid var(--border-mid); color: var(--text); padding: 8px 14px; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 13px; cursor: pointer; outline: none; letter-spacing: .5px; }
+  .sort-select:hover { border-color: var(--border-mid); }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 22px 26px;
+    margin-bottom: 10px;
+    transition: border-color .2s;
+    position: relative;
+    overflow: hidden;
+    animation: slideIn .25s ease forwards;
+    opacity: 0;
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* Left accent stripe */
+  .card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2px; }
+  .card.conference::before  { background: var(--accent); }
+  .card.release::before     { background: var(--green); }
+  .card.fda::before         { background: var(--amber); }
+  .card.financial::before   { background: #a78bfa; }
+  .card.pipeline::before    { background: #f472b6; }
+  .card.partnership::before { background: #fb923c; }
+
+  .card:hover { border-color: var(--border-mid); background: var(--surface2); }
+
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+  /* Tags — box style for contrast */
+  .tag { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border-radius: 3px; font-weight: 500; border: 1px solid; }
+  .tag-conference  { color: var(--accent);  border-color: rgba(0,212,255,.25);  background: rgba(0,212,255,.05); }
+  .tag-release     { color: var(--green);   border-color: rgba(16,185,129,.25); background: rgba(16,185,129,.05); }
+  .tag-fda         { color: var(--amber);   border-color: rgba(245,158,11,.25); background: rgba(245,158,11,.05); }
+  .tag-financial   { color: #a78bfa;        border-color: rgba(167,139,250,.25); background: rgba(167,139,250,.05); }
+  .tag-pipeline    { color: #f472b6;        border-color: rgba(244,114,182,.25); background: rgba(244,114,182,.05); }
+  .tag-partnership { color: #fb923c;        border-color: rgba(251,146,60,.25);  background: rgba(251,146,60,.05); }
+
+  /* TA tag — boxed */
+  .ta-tag { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1px; padding: 4px 10px; border-radius: 3px; background: var(--surface2); border: 1px solid var(--border-mid); color: var(--text-secondary); text-transform: uppercase; }
+
+  .company-badge { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600; color: var(--text); background: var(--surface2); padding: 4px 10px; border-radius: 3px; border: 1px solid var(--border-mid); letter-spacing: 1px; }
+  .card-time { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; }
+
+  .card-title { font-size: 20px; font-weight: 600; line-height: 1.4; color: var(--text); margin-bottom: 10px; letter-spacing: -0.2px; }
+  .card-summary { font-size: 16px; line-height: 1.7; color: var(--text-secondary); }
+
+  /* Key takeaway — boxed for contrast */
+  .key-takeaway {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: var(--box);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text-secondary);
+    letter-spacing: .3px;
+    line-height: 1.6;
+  }
+
+  .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .card-source { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; letter-spacing: .5px; }
+  .card-actions { display: flex; align-items: center; gap: 14px; }
+
+  .card-link { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-secondary); text-decoration: none; display: flex; align-items: center; gap: 4px; letter-spacing: 1px; text-transform: uppercase; transition: color .15s; }
+  .card-link:hover { color: var(--text); }
+
+  .flag-btn { background: none; border: 1px solid var(--border); color: var(--muted); width: 26px; height: 26px; border-radius: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all .15s; flex-shrink: 0; }
+  .flag-btn:hover { border-color: var(--border-mid); color: var(--text-secondary); }
+  .flag-btn.flagged { border-color: var(--amber); color: var(--amber); background: rgba(245,158,11,.06); }
+
+  /* Clinical impact — boxed pill */
+  .clinical-impact { display: flex; align-items: center; gap: 5px; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; padding: 3px 8px; border-radius: 2px; border: 1px solid; }
+  .clinical-impact.positive { color: var(--green);  border-color: rgba(16,185,129,.3);  background: rgba(16,185,129,.05); }
+  .clinical-impact.negative { color: var(--red);    border-color: rgba(239,68,68,.3);   background: rgba(239,68,68,.05); }
+  .clinical-impact.watch    { color: var(--amber);  border-color: rgba(245,158,11,.3);  background: rgba(245,158,11,.05); }
+
+  /* ── SKELETON ── */
+  .skeleton { background: #000; border: 1px solid var(--border); border-radius: 4px; padding: 20px 22px; margin-bottom: 8px; }
+  .skel-line { height: 10px; background: linear-gradient(90deg, #0d0d0d 25%, #1a1a1a 50%, #0d0d0d 75%); background-size: 200% 100%; border-radius: 2px; animation: shimmer 1.8s infinite; margin-bottom: 10px; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .skel-line.short  { width: 25%; }
+  .skel-line.medium { width: 55%; }
+  .skel-line.long   { width: 88%; }
+
+  /* ── EMPTY ── */
+  .empty { text-align: center; padding: 80px 20px; color: var(--muted); }
+  .empty-icon { font-size: 36px; margin-bottom: 14px; opacity: .3; }
+  .empty-text { font-family: 'DM Mono', monospace; font-size: 14px; letter-spacing: 1px; }
+
+
+
+
+  /* ── TABS ── */
+  .tab-bar {
+    display: flex; align-items: center; gap: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    background: var(--bg);
+    position: sticky; top: 100px; z-index: 99;
+  }
+  .tab-btn {
+    font-family: 'DM Mono', monospace; font-size: 14px; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--text-secondary);
+    padding: 18px 28px; border: none; background: none; cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: all .15s;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── CONFERENCE TAB ── */
+  .conf-layout { display: grid; grid-template-columns: 270px 1fr; min-height: calc(100vh - 100px); }
+
+  .conf-sidebar {
+    border-right: 1px solid var(--border);
+    padding: 28px 0;
+    background: var(--surface);
+    overflow-y: auto;
+    max-height: calc(100vh - 136px);
+    position: sticky; top: 136px;
+  }
+
+  .year-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .year-pill {
+    font-family: 'DM Mono', monospace; font-size: 14px; letter-spacing: 1px;
+    padding: 9px 20px; border-radius: 4px; border: 1px solid var(--border-mid);
+    cursor: pointer; transition: all .15s; color: var(--text);
+    background: var(--surface2); user-select: none;
+  }
+  .year-pill:hover { border-color: var(--text); color: var(--text); background: var(--box); }
+  .year-pill.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.1); font-weight: 600; }
+
+  .conf-filter-chip {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 0; cursor: pointer; border: none; border-bottom: 1px solid transparent;
+    transition: all .15s; font-size: 15px; color: var(--text-secondary);
+    user-select: none; background: none;
+  }
+  .conf-filter-chip:hover { color: var(--text); }
+  .conf-filter-chip.active { color: var(--text); }
+  .conf-filter-chip.active .chip-label { border-bottom: 1px solid var(--text); padding-bottom: 1px; }
+
+  .product-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+  .product-pill {
+    font-family: 'DM Mono', monospace; font-size: 13px; padding: 7px 14px;
+    border-radius: 4px; border: 1px solid var(--border-mid); cursor: pointer;
+    transition: all .15s; color: var(--text); background: var(--surface2); user-select: none;
+    white-space: nowrap; letter-spacing: .5px;
+  }
+  .product-pill:hover { border-color: var(--text); color: var(--text); }
+  .product-pill.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.1); }
+
+  .conf-main { padding: 28px 32px; background: var(--bg); }
+
+  .conf-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 22px 26px; margin-bottom: 10px; transition: all .2s;
+    position: relative; overflow: hidden;
+    animation: slideIn .25s ease forwards; opacity: 0;
+  }
+  .conf-card:hover { border-color: var(--border-mid); background: var(--surface2); }
+  .conf-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2px; background: var(--accent); }
+  .conf-card:hover { border-color: var(--border-mid); }
+
+  .conf-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .conf-badge {
+    font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 1px;
+    text-transform: uppercase; padding: 3px 8px; border-radius: 2px; border: 1px solid;
+    color: var(--accent); border-color: rgba(0,212,255,.3); background: rgba(0,212,255,.05);
+  }
+  .year-badge {
+    font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 1px;
+    text-transform: uppercase; padding: 3px 8px; border-radius: 2px;
+    color: var(--text-secondary); background: var(--box); border: 1px solid var(--border-mid);
+  }
+  .product-badge {
+    font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 1px;
+    padding: 3px 8px; border-radius: 2px; background: rgba(124,58,237,.1);
+    border: 1px solid rgba(124,58,237,.3); color: #a78bfa;
+    text-transform: uppercase;
+  }
+  .conf-title { font-size: 20px; font-weight: 600; line-height: 1.4; color: var(--text); margin-bottom: 8px; }
+  .conf-summary { font-size: 16px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 14px; }
+  .conf-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 12px; border-top: 1px solid var(--border);
+  }
+  .conf-source { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; }
+  .conf-link {
+    font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-secondary);
+    text-decoration: none; display: flex; align-items: center; gap: 4px;
+    letter-spacing: 1px; text-transform: uppercase; transition: color .15s;
+  }
+  .conf-link:hover { color: var(--text); }
+
+  .conf-load-btn {
+    width: 100%; background: #000; border: 1px solid var(--border-mid);
+    color: var(--text-secondary); padding: 12px; border-radius: 4px;
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase; cursor: pointer; transition: all .2s; margin-bottom: 20px;
+  }
+  .conf-load-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .conf-load-btn:disabled { opacity: .4; pointer-events: none; }
+  .conf-status {
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-secondary);
+    letter-spacing: 1px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+  }
+
+
+  /* ── CLINICAL TRIALS TAB ── */
+  .ct-layout { display: grid; grid-template-columns: 270px 1fr; min-height: calc(100vh - 100px); }
+
+  .ct-sidebar {
+    border-right: 1px solid var(--border);
+    padding: 28px 0;
+    background: var(--surface);
+    overflow-y: auto;
+    max-height: calc(100vh - 136px);
+    position: sticky; top: 136px;
+  }
+
+  .ct-main { padding: 28px 32px; background: var(--bg); }
+
+  .status-pill {
+    font-family: 'DM Mono', monospace; font-size: 13px; padding: 8px 16px;
+    border-radius: 4px; border: 1px solid var(--border-mid); cursor: pointer;
+    transition: all .15s; user-select: none; white-space: nowrap; letter-spacing: .5px;
+    color: var(--text); background: var(--surface2); border-color: var(--border-mid);
+  }
+  .status-pill:hover { border-color: var(--text); color: var(--text); }
+  .status-pill.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.1); font-weight: 600; }
+  .status-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .phase-pill {
+    font-family: 'DM Mono', monospace; font-size: 13px; padding: 8px 16px;
+    border-radius: 4px; border: 1px solid var(--border-mid); cursor: pointer;
+    transition: all .15s; color: var(--text); background: var(--surface2); user-select: none; letter-spacing: .5px;
+  }
+  .phase-pill:hover { border-color: var(--text); color: var(--text); }
+  .phase-pill.active { border-color: var(--green); color: var(--green); background: rgba(16,185,129,.1); font-weight: 600; }
+  .phase-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .ct-product-pill {
+    font-family: 'DM Mono', monospace; font-size: 13px; padding: 7px 14px;
+    border-radius: 4px; border: 1px solid var(--border-mid); cursor: pointer;
+    transition: all .15s; color: var(--text); background: var(--surface2); user-select: none; white-space: nowrap; letter-spacing: .5px;
+  }
+  .ct-product-pill:hover { border-color: var(--text); color: var(--text); }
+  .ct-product-pill.active { border-color: #a78bfa; color: #a78bfa; background: rgba(167,139,250,.1); font-weight: 600; }
+  .ct-product-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .ct-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+    padding: 20px 22px; margin-bottom: 8px; transition: border-color .2s;
+    position: relative; overflow: hidden;
+    animation: slideIn .25s ease forwards; opacity: 0;
+  }
+  .ct-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2px; }
+  .ct-card.recruiting::before    { background: var(--green); }
+  .ct-card.completed::before     { background: var(--text-secondary); }
+  .ct-card.active::before        { background: var(--accent); }
+  .ct-card.terminated::before    { background: var(--red); }
+  .ct-card.not_yet_recruiting::before { background: var(--amber); }
+  .ct-card.enrolling_by_invitation::before { background: #a78bfa; }
+  .ct-card:hover { border-color: var(--border-mid); background: var(--surface2); }
+
+  .ct-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+
+  .status-tag {
+    font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 1px;
+    text-transform: uppercase; padding: 3px 8px; border-radius: 2px; border: 1px solid;
+    font-weight: 500;
+  }
+  .status-tag.recruiting    { color: var(--green);  border-color: rgba(16,185,129,.3);  background: rgba(16,185,129,.06); }
+  .status-tag.completed     { color: var(--text-secondary); border-color: var(--border-mid); background: var(--box); }
+  .status-tag.active        { color: var(--accent); border-color: rgba(0,212,255,.3);   background: rgba(0,212,255,.05); }
+  .status-tag.terminated    { color: var(--red);    border-color: rgba(239,68,68,.3);   background: rgba(239,68,68,.05); }
+  .status-tag.not_yet_recruiting { color: var(--amber); border-color: rgba(245,158,11,.3); background: rgba(245,158,11,.05); }
+  .status-tag.enrolling_by_invitation { color: #a78bfa; border-color: rgba(167,139,250,.3); background: rgba(167,139,250,.05); }
+
+  .phase-tag {
+    font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 1px;
+    padding: 3px 8px; border-radius: 2px; background: var(--box);
+    border: 1px solid var(--border-mid); color: var(--text-secondary);
+  }
+  .ct-product-tag {
+    font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 1px;
+    padding: 3px 8px; border-radius: 2px; background: rgba(167,139,250,.08);
+    border: 1px solid rgba(167,139,250,.25); color: #a78bfa;
+    text-transform: uppercase;
+  }
+
+  .ct-title { font-size: 18px; font-weight: 600; line-height: 1.45; color: var(--text); margin-bottom: 12px; }
+
+  .ct-details {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 12px; margin-bottom: 14px;
+  }
+  .ct-detail { }
+  .ct-detail-label { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1.5px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
+  .ct-detail-value { font-family: 'DM Mono', monospace; font-size: 15px; color: var(--text); }
+
+  .ct-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 12px; border-top: 1px solid var(--border);
+  }
+  .ct-nct { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text-secondary); letter-spacing: 1px; }
+  .ct-link {
+    font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text-secondary);
+    text-decoration: none; display: flex; align-items: center; gap: 4px;
+    letter-spacing: 1px; text-transform: uppercase; transition: color .15s;
+  }
+  .ct-link:hover { color: var(--accent); }
+
+  .ct-load-btn {
+    background: var(--surface2); border: 1px solid var(--border-mid); color: var(--text-secondary);
+    padding: 8px 20px; border-radius: 4px; font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
+    transition: all .2s;
+  }
+  .ct-load-btn:hover { border-color: var(--green); color: var(--green); }
+  .ct-load-btn:disabled { opacity: .4; pointer-events: none; }
+
+
+  /* ── CALENDAR TAB ── */
+  .cal-layout { display: grid; grid-template-columns: 270px 1fr; min-height: calc(100vh - 136px); }
+
+  .cal-sidebar {
+    border-right: 1px solid var(--border);
+    padding: 28px 0;
+    background: var(--surface);
+    overflow-y: auto;
+    max-height: calc(100vh - 136px);
+    position: sticky; top: 136px;
+  }
+
+  .cal-main { padding: 28px 32px; background: var(--bg); }
+
+  /* Month navigation */
+  .cal-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .cal-nav-btn {
+    background: var(--surface2); border: 1px solid var(--border-mid);
+    color: var(--text); width: 36px; height: 36px; border-radius: 4px;
+    cursor: pointer; font-size: 16px; display: flex; align-items: center;
+    justify-content: center; transition: all .15s;
+  }
+  .cal-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .cal-month-label {
+    font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 600;
+    color: var(--text); letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  /* Calendar grid */
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 1px; background: var(--border);
+    border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .cal-day-header {
+    background: var(--surface2); padding: 10px 0; text-align: center;
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 600;
+    letter-spacing: 2px; color: var(--text-secondary); text-transform: uppercase;
+  }
+  .cal-cell {
+    background: var(--surface); min-height: 90px; padding: 8px;
+    position: relative; transition: background .15s; cursor: default;
+  }
+  .cal-cell.other-month { background: var(--bg); opacity: .5; }
+  .cal-cell.today { background: rgba(0,212,255,.04); }
+  .cal-cell.today .cal-date { color: var(--accent); font-weight: 700; }
+  .cal-cell.has-events { cursor: pointer; }
+  .cal-cell.has-events:hover { background: var(--surface2); }
+  .cal-date {
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--text-secondary); margin-bottom: 4px;
+  }
+  .cal-event-dot {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--text-secondary);
+    padding: 2px 0; line-height: 1.3; cursor: pointer;
+    transition: color .1s;
+  }
+  .cal-event-dot:hover { color: var(--text); }
+  .cal-event-pip {
+    width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  }
+  .cal-event-label {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 120px;
+  }
+  .cal-more {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    color: var(--muted); margin-top: 2px;
+  }
+
+  /* Upcoming events list */
+  .cal-upcoming-label {
+    font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600;
+    letter-spacing: 2px; color: var(--text); text-transform: uppercase;
+    margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .cal-event-card {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 16px 18px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 6px;
+    margin-bottom: 8px; transition: all .2s; position: relative; overflow: hidden;
+    animation: slideIn .25s ease forwards; opacity: 0;
+  }
+  .cal-event-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2px; }
+  .cal-event-card:hover { border-color: var(--border-mid); background: var(--surface2); }
+  .cal-event-date-block {
+    flex-shrink: 0; width: 52px; text-align: center;
+    background: var(--surface2); border: 1px solid var(--border-mid);
+    border-radius: 4px; padding: 8px 4px;
+  }
+  .cal-event-month {
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--text-secondary);
+  }
+  .cal-event-day {
+    font-family: 'DM Mono', monospace; font-size: 24px; font-weight: 700;
+    color: var(--text); line-height: 1;
+  }
+  .cal-event-year {
+    font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted);
+  }
+  .cal-event-body { flex: 1; min-width: 0; }
+  .cal-event-title {
+    font-size: 16px; font-weight: 600; color: var(--text);
+    margin-bottom: 4px; line-height: 1.4;
+  }
+  .cal-event-company {
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    font-weight: 600; letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .cal-event-desc {
+    font-size: 14px; color: var(--text-secondary); line-height: 1.6;
+  }
+  .cal-event-meta {
+    display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  }
+  .cal-event-type {
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1px;
+    text-transform: uppercase; padding: 3px 9px; border-radius: 3px;
+    border: 1px solid; font-weight: 500;
+  }
+  .cal-event-type.earnings  { color: #a78bfa; border-color: rgba(167,139,250,.3); background: rgba(167,139,250,.07); }
+  .cal-event-type.conference { color: var(--accent); border-color: rgba(0,212,255,.3); background: rgba(0,212,255,.07); }
+  .cal-event-type.presentation { color: var(--green); border-color: rgba(16,185,129,.3); background: rgba(16,185,129,.07); }
+  .cal-event-type.agm       { color: var(--amber); border-color: rgba(245,158,11,.3); background: rgba(245,158,11,.07); }
+  .cal-event-type.readout   { color: #f472b6; border-color: rgba(244,114,182,.3); background: rgba(244,114,182,.07); }
+  .cal-event-type.other     { color: var(--text-secondary); border-color: var(--border-mid); background: var(--surface2); }
+  .cal-event-time {
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted);
+  }
+  .cal-event-link {
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-secondary);
+    text-decoration: none; display: flex; align-items: center; gap: 4px;
+    letter-spacing: 1px; text-transform: uppercase; transition: color .15s; margin-left: auto;
+  }
+  .cal-event-link:hover { color: var(--accent); }
+
+  /* Sidebar company filter */
+  .cal-company-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; cursor: pointer; font-size: 14px;
+    transition: color .15s; color: var(--text-secondary);
+  }
+  .cal-company-item:hover { color: var(--text); }
+  .cal-company-item.active { color: var(--text); }
+  .cal-company-check {
+    width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0;
+    border: 1px solid var(--border-mid); display: flex; align-items: center;
+    justify-content: center; font-size: 9px; transition: all .15s;
+  }
+  .cal-company-item.active .cal-company-check {
+    background: var(--accent); border-color: var(--accent); color: #000;
+  }
+
+  /* Event type filter pills */
+  .cal-type-pill {
+    font-family: 'DM Mono', monospace; font-size: 12px; padding: 6px 14px;
+    border-radius: 4px; border: 1px solid var(--border-mid); cursor: pointer;
+    transition: all .15s; color: var(--text); background: var(--surface2);
+    user-select: none; white-space: nowrap;
+  }
+  .cal-type-pill:hover { border-color: var(--text); }
+  .cal-type-pill.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.08); font-weight: 600; }
+  .cal-type-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  /* Load / refresh button */
+  .cal-load-btn {
+    background: var(--surface2); border: 1px solid var(--border-mid);
+    color: var(--text); padding: 8px 20px; border-radius: 4px;
+    font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 1px;
+    text-transform: uppercase; cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .cal-load-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .cal-load-btn:disabled { opacity: .4; pointer-events: none; }
+  .cal-status {
+    font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text-secondary);
+    letter-spacing: 1px; margin-bottom: 20px;
+  }
+
+  /* Detail modal */
+  .cal-modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.7); z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .cal-modal-overlay.open { display: flex; }
+  .cal-modal {
+    background: var(--surface); border: 1px solid var(--border-mid);
+    border-radius: 8px; padding: 28px 32px; max-width: 560px; width: 90%;
+    position: relative; animation: slideIn .2s ease forwards; opacity: 0;
+  }
+  .cal-modal-close {
+    position: absolute; top: 16px; right: 16px;
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    width: 28px; height: 28px; border-radius: 4px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; transition: all .15s;
+  }
+  .cal-modal-close:hover { border-color: var(--text-secondary); color: var(--text); }
+
+
+  /* ── PIPELINE TAB ── */
+  .pipe-layout { display: grid; grid-template-columns: 270px 1fr; min-height: calc(100vh - 136px); }
+  .pipe-sidebar {
+    border-right: 1px solid var(--border); padding: 28px 0;
+    background: var(--surface); overflow-y: auto;
+    max-height: calc(100vh - 136px); position: sticky; top: 136px;
+  }
+  .pipe-main { padding: 28px 36px; background: var(--bg); overflow-x: auto; }
+
+  /* Phase column headers */
+  .pipe-chart-wrap { min-width: 900px; }
+  .pipe-col-headers {
+    display: grid;
+    grid-template-columns: 220px repeat(6, 1fr);
+    gap: 0; margin-bottom: 0;
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bg); padding-bottom: 0;
+  }
+  .pipe-col-spacer { } /* empty left column */
+  .pipe-col-header {
+    text-align: center; padding: 10px 4px;
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    border-bottom: 2px solid;
+    border-left: 1px solid var(--border);
+  }
+  .pipe-col-header.ph-preclinical { color: #555; border-color: #444; }
+  .pipe-col-header.ph-1  { color: #5b8def; border-color: #5b8def; }
+  .pipe-col-header.ph-2  { color: #a78bfa; border-color: #a78bfa; }
+  .pipe-col-header.ph-3  { color: #f59e0b; border-color: #f59e0b; }
+  .pipe-col-header.ph-nda { color: #10b981; border-color: #10b981; }
+  .pipe-col-header.ph-approved { color: #00d4ff; border-color: #00d4ff; }
+
+  /* TA section */
+  .pipe-ta-section { margin-bottom: 4px; }
+  .pipe-ta-section-header {
+    display: grid; grid-template-columns: 220px 1fr;
+    align-items: center; padding: 10px 0 6px 0;
+    margin-top: 20px;
+  }
+  .pipe-ta-section-title {
+    font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--text-secondary);
+    padding-right: 12px;
+  }
+  .pipe-ta-divider { height: 1px; background: var(--border); }
+
+  /* Each asset row */
+  .pipe-row {
+    display: grid;
+    grid-template-columns: 220px repeat(6, 1fr);
+    gap: 0; min-height: 52px;
+    border-bottom: 1px solid var(--border);
+    transition: background .15s; cursor: default;
+  }
+  .pipe-row:hover { background: var(--surface); }
+  .pipe-row-label {
+    padding: 10px 12px 10px 0;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .pipe-row-product {
+    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700;
+    color: var(--text); letter-spacing: .5px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .pipe-row-generic {
+    font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted);
+    margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pipe-row-indication {
+    font-size: 12px; color: var(--text-secondary); margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Phase cells */
+  .pipe-cell {
+    border-left: 1px solid var(--border);
+    padding: 8px 6px; display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+
+  /* The filled bar showing current phase */
+  .pipe-bar-wrap {
+    width: 100%; display: flex; align-items: center; justify-content: center;
+    padding: 0 4px;
+  }
+  .pipe-bar {
+    height: 20px; border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 700;
+    letter-spacing: 1px; color: #000; white-space: nowrap;
+    transition: all .2s; width: 100%; cursor: pointer;
+    position: relative; overflow: hidden;
+  }
+  .pipe-bar:hover { filter: brightness(1.15); }
+  .pipe-bar::after {
+    content: ''; position: absolute; top: 0; left: -100%;
+    width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.2), transparent);
+    animation: pipe-shimmer 2s infinite;
+  }
+  @keyframes pipe-shimmer { to { left: 160%; } }
+
+  /* Milestone dot */
+  .pipe-milestone-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 2px solid; background: var(--bg);
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    cursor: pointer;
+  }
+  .pipe-milestone-label {
+    font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted);
+    position: absolute; bottom: -14px; right: 0; white-space: nowrap;
+    letter-spacing: .5px;
+  }
+
+  /* Company color strip on left of row */
+  .pipe-company-strip {
+    width: 3px; border-radius: 2px; height: 70%; margin-right: 8px; flex-shrink: 0;
+  }
+
+  /* Tooltip on hover */
+  .pipe-tooltip {
+    position: fixed; background: var(--surface2); border: 1px solid var(--border-mid);
+    border-radius: 6px; padding: 12px 16px; pointer-events: none; z-index: 999;
+    max-width: 280px; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    display: none;
+  }
+  .pipe-tooltip.visible { display: block; }
+  .pipe-tooltip-product { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .pipe-tooltip-company { font-family: 'DM Mono', monospace; font-size: 11px; margin-bottom: 6px; }
+  .pipe-tooltip-indication { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+  .pipe-tooltip-modality { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .pipe-tooltip-milestone { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); }
+
+  /* Phase colour map for bars */
+  .pipe-bar.ph-preclinical { background: #333; color: #888; }
+  .pipe-bar.ph-1  { background: #5b8def; }
+  .pipe-bar.ph-2  { background: #a78bfa; }
+  .pipe-bar.ph-3  { background: #f59e0b; }
+  .pipe-bar.ph-nda { background: #10b981; }
+  .pipe-bar.ph-approved { background: #00d4ff; }
+
+  /* Legend */
+  .pipe-legend {
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    padding: 14px 0; margin-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .pipe-legend-item { display: flex; align-items: center; gap: 6px; }
+  .pipe-legend-dot { width: 12px; height: 12px; border-radius: 2px; }
+  .pipe-legend-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-secondary); letter-spacing: .5px; }
+
+  /* Filter pills */
+  .pipe-ta-pill {
+    font-family: 'DM Mono', monospace; font-size: 12px; padding: 6px 14px;
+    border-radius: 4px; border: 1px solid var(--border-mid); cursor: pointer;
+    transition: all .15s; color: var(--text); background: var(--surface2);
+    user-select: none; white-space: nowrap;
+  }
+  .pipe-ta-pill:hover { border-color: var(--text); }
+  .pipe-ta-pill.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.08); font-weight: 600; }
+  .pipe-ta-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+
+
+  .pipe-company-only {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px;
+    color: var(--muted); cursor: pointer; padding: 2px 6px;
+    border: 1px solid transparent; border-radius: 3px;
+    opacity: 0; transition: all .15s; flex-shrink: 0; text-transform: uppercase;
+    margin-left: auto;
+  }
+  .cal-company-item:hover .pipe-company-only { opacity: 1; }
+  .pipe-company-only:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.08); }
+
+  .pipe-company-all-btn {
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1px;
+    color: var(--text-secondary); cursor: pointer; padding: 5px 10px;
+    border: 1px solid var(--border-mid); border-radius: 3px;
+    text-transform: uppercase; transition: all .15s; display: inline-block;
+    margin-bottom: 10px; background: var(--surface2);
+  }
+  .pipe-company-all-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .pipe-load-btn {
+    background: var(--surface2); border: 1px solid var(--border-mid);
+    color: var(--text); padding: 8px 20px; border-radius: 4px;
+    font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 1px;
+    text-transform: uppercase; cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .pipe-load-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .pipe-load-btn:disabled { opacity: .4; pointer-events: none; }
+  .pipe-status { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text-secondary); letter-spacing: 1px; margin-bottom: 16px; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #000; }
+  ::-webkit-scrollbar-thumb { background: #1c1c1c; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #2a2a2a; }
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="passwordGate" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:0;">
+  <div style="text-align:center;margin-bottom:48px;">
+    <div style="font-family:monospace;font-size:28px;font-weight:500;letter-spacing:8px;color:#f0f0f0;text-transform:uppercase;margin-bottom:8px;">LUMOS</div>
+    <div style="font-family:monospace;font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;">Competitive Intelligence</div>
+  </div>
+  <div style="width:320px;">
+    <div style="font-family:monospace;font-size:9px;letter-spacing:2px;color:#444;text-transform:uppercase;margin-bottom:8px;">Access Password</div>
+    <input id="passwordInput" type="password" placeholder="Enter password"
+      onkeydown="if(event.key==='Enter')checkPassword().catch(console.error)"
+      style="width:100%;background:#000;border:1px solid #2a2a2a;color:#f0f0f0;padding:12px 16px;border-radius:3px;font-family:monospace;font-size:13px;outline:none;letter-spacing:2px;margin-bottom:10px;"
+      onfocus="this.style.borderColor='#444'" onblur="this.style.borderColor='#2a2a2a'"/>
+    <button onclick="checkPassword()"
+      style="width:100%;background:#f0f0f0;border:none;color:#000;padding:11px;border-radius:3px;font-family:monospace;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;">
+      ENTER
+    </button>
+    <div id="pwError" style="display:none;font-family:monospace;font-size:11px;color:#ef4444;letter-spacing:1px;margin-top:10px;text-align:center;">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="appShell" style="display:none;">
+<header>
+  <div class="logo">
+    <span class="logo-name">LUMOS</span>
+    <span class="logo-tag">CI Dashboard</span>
+  </div>
+  <div class="header-right">
+    <div class="last-updated">Last Briefing: <span id="lastUpdatedTime">—</span></div>
+    <div class="live-badge">
+      <div class="pulse-dot"></div>
+      <span>LIVE</span>
+    </div>
+    <button class="refresh-btn" id="refreshBtn" onclick="fetchIntel()">
+      <svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+      Run Briefing
+    </button>
+  </div>
+</header>
+
+
+<!-- TICKER BAR -->
+<div class="ticker-bar" id="tickerBar">
+  <div class="ticker-label">MARKET INTELLIGENCE</div>
+  <div class="ticker-track-wrap">
+    <div class="ticker-track" id="tickerTrack">
+      <span class="ticker-empty" id="tickerEmpty">Awaiting briefing data — click Run Briefing to populate</span>
+    </div>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('intel',this)">📡 Intelligence Briefing</button>
+  <button class="tab-btn" onclick="switchTab('conference',this)">🎤 Congress & Conferences</button>
+  <button class="tab-btn" onclick="switchTab('trials',this)">🧪 Clinical Trials Registry</button>
+  <button class="tab-btn" onclick="switchTab('calendar',this)">📅 Event Calendar</button>
+  <button class="tab-btn" onclick="switchTab('pipeline',this)">🔬 R&D Pipeline</button>
+</div>
+
+<div id="panel-intel" class="tab-panel active">
+<div class="layout">
+  <aside>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Signal Type</div>
+      <div class="filter-chip active" data-filter="all" onclick="setTypeFilter(this,'all')"><span class="chip-label">All Updates</span> <span class="chip-count" id="count-all">0</span></div>
+      <div class="filter-chip" data-filter="conference" onclick="setTypeFilter(this,'conference')"><span class="chip-label">🎤 Conferences</span> <span class="chip-count" id="count-conference">0</span></div>
+      <div class="filter-chip" data-filter="release" onclick="setTypeFilter(this,'release')"><span class="chip-label">📣 Press Releases & Announcements</span> <span class="chip-count" id="count-release">0</span></div>
+      <div class="filter-chip" data-filter="fda" onclick="setTypeFilter(this,'fda')"><span class="chip-label">🔬 Regulatory & Clinical</span> <span class="chip-count" id="count-fda">0</span></div>
+      <div class="filter-chip" data-filter="pipeline" onclick="setTypeFilter(this,'pipeline')"><span class="chip-label">🧬 Pipeline Developments</span> <span class="chip-count" id="count-pipeline">0</span></div>
+      <div class="filter-chip" data-filter="partnership" onclick="setTypeFilter(this,'partnership')"><span class="chip-label">🤝 Partnerships &amp; M&amp;A <span class="chip-count" id="count-partnership">0</span></div>
+      <div class="filter-chip" data-filter="financial" onclick="setTypeFilter(this,'financial')"><span class="chip-label">📊 Investor & Financial</span> <span class="chip-count" id="count-financial">0</span></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Therapeutic Area</div>
+      <div class="ta-pills" id="taPills"><span style="font-size:12px;color:var(--muted)">Run briefing to populate</span></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Companies</div>
+      <div id="companyList"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Briefing Status</div>
+      <div class="next-refresh">
+        <div class="next-refresh-label">Last Briefing</div>
+        <div class="countdown" id="countdown">—</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:100%"></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+
+
+    <div class="new-items-banner" id="newItemsBanner" onclick="dismissNewBanner()"></div>
+
+    <div class="main-header">
+      <div class="results-info">Showing <strong id="resultCount">0</strong> briefing items</div>
+      <select class="sort-select" onchange="sortItems(this.value)">
+        <option value="newest">Newest First</option>
+        <option value="company">By Company</option>
+        <option value="type">By Type</option>
+        <option value="ta">By Therapeutic Area</option>
+      </select>
+    </div>
+
+    <div id="feed"></div>
+  </main>
+</div>
+
+<script>
+const COMPANIES = [
+  { name: 'ImageneBio',          ticker: 'IMA',  color: '#00d4ff', domain: 'imagenebio.com' },
+  { name: 'Sanofi',              ticker: 'SNY',  color: '#5b8def', domain: 'sanofi.com' },
+  { name: 'Eli Lilly',           ticker: 'LLY',  color: '#d50032', domain: 'lilly.com' },
+  { name: 'LEO Pharma',          ticker: 'LEO',  color: '#00a868', domain: 'leo-pharma.com' },
+  { name: 'Galderma',            ticker: 'GALD', color: '#c084fc', domain: 'galderma.com' },
+  { name: 'Pfizer',              ticker: 'PFE',  color: '#0052cc', domain: 'pfizer.com' },
+  { name: 'AbbVie',              ticker: 'ABBV', color: '#f97316', domain: 'abbvie.com' },
+  { name: 'Apogee',              ticker: 'APGE', color: '#f59e0b', domain: 'apogeetherapeutics.com' },
+  { name: 'Nektar Therapeutics', ticker: 'NKTR', color: '#a3e635', domain: 'nektar.com' },
+];
+
+// Get logo URL for a company (Clearbit with color fallback)
+function companyLogo(company, size=28) {
+  const c = COMPANIES.find(x => x.name === company);
+  if (!c || !c.domain) return '';
+  return 'https://logo.clearbit.com/' + c.domain;
+}
+
+// Render company logo img with colored dot fallback
+function companyLogoImg(company, size=28) {
+  const c = COMPANIES.find(x => x.name === company);
+  if (!c) return '<div class="company-dot" style="background:#888"></div>';
+  const logoUrl = 'https://logo.clearbit.com/' + c.domain;
+  const fallback = 'this.style.display=\\"none\\";this.nextElementSibling.style.display=\\"flex\\"';
+  return '<img src="' + logoUrl + '" alt="' + company + '" class="company-logo-img" style="width:' + size + 'px;height:' + size + 'px;border-radius:4px;object-fit:contain;background:#fff;padding:2px;" ' +
+    'onerror="' + fallback + '">' +
+    '<div class="company-dot" style="background:' + c.color + ';display:none;width:' + size + 'px;height:' + size + 'px;border-radius:4px;flex-shrink:0;"></div>';
+}
+
+// ── INVESTOR RELATIONS URL MAP ──────────────────────────────────────────────
+// Each company has a set of IR URLs to fetch directly instead of web search.
+// 'ir' = main IR page link shown in sidebar
+// 'sources' = pages fetched during briefing (press releases, events, pipeline)
+// Companies without sources yet fall back to web_search automatically.
+
+const IR_SOURCES = {
+  'ImageneBio': {
+    ir: 'https://ir.imagenebio.com/',
+    sources: [
+      { url: 'https://ir.imagenebio.com/news', label: 'Press Releases' },
+      { url: 'https://ir.imagenebio.com/events', label: 'Events & Presentations' },
+      { url: 'https://imagenebio.com/our-program/', label: 'Pipeline' },
+    ]
+  },
+  'Sanofi': {
+    ir: 'https://www.sanofi.com/en/investors',
+    sources: [
+      { url: 'https://www.sanofi.com/en/media-room/press-releases', label: 'Press Releases' },
+      { url: 'https://www.sanofi.com/en/investors/news-events/upcoming-events', label: 'Upcoming Events' },
+      { url: 'https://www.sanofi.com/en/investors/broker-conferences', label: 'Conferences' },
+      { url: 'https://www.sanofi.com/en/our-science/our-pipeline', label: 'Pipeline' },
+    ]
+  },
+  'Eli Lilly': {
+    ir: 'https://investor.lilly.com',
+    sources: [
+      { url: 'https://investor.lilly.com/news-releases', label: 'Press Releases' },
+      { url: 'https://investor.lilly.com/webcasts-and-presentations', label: 'Webcasts & Presentations' },
+      { url: 'https://www.lilly.com/discovery/pipeline', label: 'Pipeline' },
+    ]
+  },
+  'LEO Pharma': {
+    ir: 'https://www.leo-pharma.com/media-center/news',
+    webSearchSupplementary: true, // Private company — supplement IR with targeted web search
+    webSearchQuery: '"LEO Pharma" (site:biospace.com OR site:prnewswire.com OR site:businesswire.com OR site:globenewswire.com)',
+    sources: [
+      { url: 'https://www.leo-pharma.com/media-center/news', label: 'News & Press Releases' },
+      { url: 'https://www.leo-pharma.com/media-center', label: 'Media Center' },
+      { url: 'https://www.leo-pharma.com/our-science/view-our-pipeline', label: 'Pipeline' },
+    ]
+  },
+  'Galderma': {
+    ir: 'https://investors.galderma.com',
+    sources: [
+      { url: 'https://investors.galderma.com/key-releases', label: 'Key Releases' },
+      { url: 'https://investors.galderma.com/events-presentations', label: 'Events & Presentations' },
+      { url: 'https://investors.galderma.com/financial-reports', label: 'Financial Reports' },
+      { url: 'https://www.galderma.com/newsroom-new', label: 'Newsroom' },
+      { url: 'https://www.galderma.com/innovation', label: 'Pipeline' },
+    ]
+  },
+  'Pfizer': {
+    ir: 'https://investors.pfizer.com',
+    webSearchOnly: true, // IR site blocks automated fetching — use web search
+    sources: []
+  },
+  'AbbVie': {
+    ir: 'https://investors.abbvie.com',
+    sources: [
+      { url: 'https://investors.abbvie.com/financial-releases', label: 'Press Releases & Financial Results' },
+      { url: 'https://investors.abbvie.com/events-and-presentations/upcoming-events', label: 'Upcoming Events' },
+      { url: 'https://investors.abbvie.com/presentations', label: 'Presentations' },
+      { url: 'https://www.abbvie.com/science/pipeline.html', label: 'Pipeline' },
+    ]
+  },
+  'Apogee': {
+    ir: 'https://investors.apogeetherapeutics.com',
+    sources: [
+      { url: 'https://investors.apogeetherapeutics.com/news-events/news', label: 'Press Releases' },
+      { url: 'https://investors.apogeetherapeutics.com/news-events/events', label: 'Events & Webcasts' },
+      { url: 'https://apogeetherapeutics.com/pipeline', label: 'Pipeline' },
+    ]
+  },
+  'Nektar Therapeutics': {
+    ir: 'https://ir.nektar.com',
+    sources: [
+      { url: 'https://ir.nektar.com/press-releases', label: 'Press Releases' },
+      { url: 'https://ir.nektar.com/events', label: 'Investor Events' },
+      { url: 'https://www.nektar.com/our-pipeline/', label: 'Pipeline' },
+    ]
+  },
+};
+
+const REFRESH_INTERVAL = 4 * 60 * 60;
+let allItems = [];
+let activeTypeFilter = 'all';
+let activeTAFilter = null;
+let activeCompany = null;
+const PROXY_URL = 'https://lumos-proxy.drake-p-s-4-twitch.workers.dev/';
+let countdown = REFRESH_INTERVAL;
+let countdownTimer = null;
+let lastFetchCount = 0;
+
+// Password is stored as a SHA-256 hash — plain text never appears in source
+const APP_PASSWORD_HASH = 'b855ffa53b8c6309d3196c61c76f64846955681ec9bb96db3e8b42402f8f3cf3';
+
+async function hashPassword(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function init() {
+  if (sessionStorage.getItem('lumos_auth') === 'true') {
+    showApp();
+  } else {
+    document.getElementById('passwordGate').style.display = 'flex';
+    document.getElementById('appShell').style.display = 'none';
+    setTimeout(() => document.getElementById('passwordInput').focus(), 100);
+  }
+}
+
+function showApp() {
+  document.getElementById('passwordGate').style.display = 'none';
+  document.getElementById('appShell').style.display = 'contents';
+  renderCompanyList();
+  startLastRefreshClock();
+  buildCTProductPills();
+  buildCalCompanyList();
+  buildPipeCompanyList();
+  loadCachedIntel();
+}
+
+async function loadCachedIntel() {
+  const cached = await cacheGet('lumos_intel');
+  if (cached && cached.data && cached.data.length > 0) {
+    allItems = cached.data;
+    lastFetchCount = allItems.length;
+    document.getElementById('lastUpdatedTime').textContent =
+      new Date(cached.savedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    updateCounts();
+    buildTAPills();
+    renderFeed();
+    buildTicker(allItems);
+    const banner = document.getElementById('newItemsBanner');
+    banner.textContent = 'Briefing data as of ' + formatCacheDate(cached.savedAt) + ' — click Run Briefing to refresh';
+    banner.style.display = 'block';
+    banner.style.cursor = 'default';
+    banner.onclick = null;
+  }
+}
+
+function startLastRefreshClock() {
+  // Shows time elapsed since last manual refresh
+  let secondsSince = 0;
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    secondsSince++;
+    const m = Math.floor(secondsSince/60), s = secondsSince%60;
+    document.getElementById('countdown').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    document.getElementById('progressFill').style.width = Math.min((secondsSince / REFRESH_INTERVAL) * 100, 100)+'%';
+  }, 1000);
+}
+
+async function checkPassword() {
+  const val = document.getElementById('passwordInput').value;
+  const hashed = await hashPassword(val);
+  if (hashed === APP_PASSWORD_HASH) {
+    sessionStorage.setItem('lumos_auth', 'true');
+    showApp();
+  } else {
+    const err = document.getElementById('pwError');
+    err.style.display = 'block';
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordInput').focus();
+    setTimeout(() => err.style.display = 'none', 3000);
+  }
+}
+
+function renderCompanyList() {
+  const container = document.getElementById('companyList');
+  container.innerHTML =
+    '<div class="pipe-company-all-btn" onclick="selectAllIntelCompanies()">Show All</div>' +
+    COMPANIES.map(c => {
+      const irUrl = IR_SOURCES[c.name]?.ir;
+      const linkBtn = irUrl
+        ? '<a href="' + irUrl + '" target="_blank" rel="noopener" class="ir-link-btn" title="Open Investor Relations" onclick="event.stopPropagation()">' +
+            '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>' +
+          '</a>'
+        : '';
+      return '<div class="company-item" data-company="' + c.name + '" onclick="filterByCompany(\'' + c.name + '\',this)">' +
+        '<div class="company-dot" style="background:' + c.color + '"></div>' +
+        '<span class="company-name" style="flex:1">' + c.name + '</span>' +
+        '<span class="pipe-company-only" onclick="event.stopPropagation();onlyIntelCompany(\'' + c.name + '\')">Only</span>' +
+        linkBtn +
+        '</div>';
+    }).join('');
+}
+
+function onlyIntelCompany(name) {
+  activeCompany = name;
+  document.querySelectorAll('.company-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.company === name);
+  });
+  renderFeed();
+}
+
+function selectAllIntelCompanies() {
+  activeCompany = null;
+  document.querySelectorAll('.company-item').forEach(el => el.classList.remove('active'));
+  renderFeed();
+}
+
+function filterByCompany(name, el) {
+  if (activeCompany === name) {
+    activeCompany = null;
+    document.querySelectorAll('.company-item').forEach(i => i.classList.remove('active'));
+  } else {
+    activeCompany = name;
+    document.querySelectorAll('.company-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+  }
+  renderFeed();
+}
+
+function buildTAPills() {
+  const areas = [...new Set(allItems.map(i => i.therapeuticArea).filter(Boolean))].sort();
+  const container = document.getElementById('taPills');
+  if (!areas.length) { container.innerHTML = '<span style="font-size:12px;color:var(--muted)">None available</span>'; return; }
+  container.innerHTML = areas.map(ta =>
+    `<div class="ta-pill ${activeTAFilter===ta?'active':''}" onclick="filterByTA('${ta}',this)">${ta}</div>`
+  ).join('');
+}
+
+function filterByTA(ta, el) {
+  if (activeTAFilter === ta) {
+    activeTAFilter = null;
+    document.querySelectorAll('.ta-pill').forEach(p => p.classList.remove('active'));
+  } else {
+    activeTAFilter = ta;
+    document.querySelectorAll('.ta-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+  }
+  renderFeed();
+}
+
+// ── FETCH HELPERS ──────────────────────────────────────────────────────────
+
+const JSON_SCHEMA = `{"items":[{"id":"str","company":"CompanyName","type":"conference|release|fda|pipeline|partnership|financial","therapeuticArea":"Immunology|Dermatology|Oncology|Neurology|Cardiology|Rare Disease|Infectious Disease|Hematology","title":"headline <80 chars","summary":"2-3 sentences of context","source":"publisher or site name","url":"https://...","time":"X days ago","clinicalImpact":"positive|negative|watch","highlight":"single key insight for pharma exec"}]}`;
+
+// Parse JSON out of a Claude response (handles markdown fences)
+function parseItems(text) {
+  try {
+    const clean = text.replace(/```json|```/g, '').trim();
+    const match = clean.match(/\{[\s\S]*\}/);
+    if (!match) return [];
+    return JSON.parse(match[0]).items || [];
+  } catch(e) { return []; }
+}
+
+// Single Claude API call — no tool use, just text in/text out
+async function claudeCall(prompt, maxTokens = 2000) {
+  const resp = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
+  const text = data.content?.find(b => b.type === 'text')?.text || '';
+  return text;
+}
+
+// Claude API call WITH web_search tool (fallback for companies without IR URLs)
+async function claudeWebSearch(prompt, maxTokens = 2000) {
+  const resp = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
+
+  // If Claude used a tool, do one follow-up turn
+  let finalData = data;
+  if (data.stop_reason === 'tool_use') {
+    const followUp = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: maxTokens,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [
+          { role: 'user', content: prompt },
+          { role: 'assistant', content: data.content },
+          { role: 'user', content: data.content
+              .filter(b => b.type === 'tool_use')
+              .map(b => ({ type: 'tool_result', tool_use_id: b.id, content: b.content ? JSON.stringify(b.content) : 'done' }))
+          }
+        ]
+      })
+    });
+    finalData = await followUp.json();
+    if (finalData.error) throw new Error(finalData.error.message);
+  }
+
+  const text = finalData.content?.find(b => b.type === 'text')?.text || '';
+  return text;
+}
+
+// Fetch a URL and return its text content via Claude (uses web_fetch via prompt)
+async function fetchIRPage(url) {
+  try {
+    const resp = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: `Fetch and return the full text content of this URL, including all headlines, dates, event names, and descriptions. URL: ${url}` }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) return '';
+
+    // Handle tool use to get the fetched content
+    if (data.stop_reason === 'tool_use') {
+      const toolResults = data.content
+        .filter(b => b.type === 'tool_use')
+        .map(b => ({ type: 'tool_result', tool_use_id: b.id, content: b.content ? JSON.stringify(b.content) : '' }));
+
+      const followUp = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 3000,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          messages: [
+            { role: 'user', content: `Fetch and return the full text content of this URL, including all headlines, dates, event names, and descriptions. URL: ${url}` },
+            { role: 'assistant', content: data.content },
+            { role: 'user', content: toolResults }
+          ]
+        })
+      });
+      const followData = await followUp.json();
+      return followData.content?.find(b => b.type === 'text')?.text || '';
+    }
+
+    return data.content?.find(b => b.type === 'text')?.text || '';
+  } catch(e) {
+    console.warn('fetchIRPage failed for', url, e);
+    return '';
+  }
+}
+
+// Process a single company using its IR source URLs
+async function fetchCompanyFromIR(company, today) {
+  const irConfig = IR_SOURCES[company.name];
+  const sources = irConfig?.sources || [];
+
+  console.log(`[IR] Fetching ${company.name} from ${sources.length} IR sources`);
+
+  // Fetch all source pages in parallel
+  const pageContents = await Promise.all(
+    sources.map(async s => {
+      const text = await fetchIRPage(s.url);
+      return text ? `=== ${s.label} (${s.url}) ===\n${text}` : '';
+    })
+  );
+
+  const combinedContent = pageContents.filter(Boolean).join('\n\n');
+  if (!combinedContent.trim()) {
+    console.warn(`[IR] No content fetched for ${company.name}, falling back to web search`);
+    return fetchCompanyWebSearch(company, today);
+  }
+
+  const prompt = `You are a pharma competitive intelligence analyst. Today: ${today}.
+
+Below is the latest content from ${company.name}'s official investor relations pages.
+
+Extract ALL newsworthy items from the last 90 days: press releases, regulatory filings, clinical trial updates, conference presentations, earnings, partnerships, pipeline milestones, and upcoming events.
+
+For upcoming events (conferences, earnings calls, AGMs), include them even if they are in the future — mark time as "upcoming" or "X days away".
+
+SOURCE CONTENT:
+${combinedContent.substring(0, 8000)}
+
+Return ONLY valid JSON, no markdown:
+${JSON_SCHEMA}
+
+Rules:
+- company field must be exactly "${company.name}"
+- Use real URLs from the source content above
+- Include upcoming events with future dates
+- therapeuticArea should reflect ${company.name}'s focus areas
+- Be specific and executive-level in titles and summaries`;
+
+  const text = await claudeCall(prompt, 2000);
+  const items = parseItems(text);
+  console.log(`[IR] ${company.name}: extracted ${items.length} items from IR pages`);
+  return items;
+}
+
+// Fallback: fetch a company using web search (for companies without IR URLs yet)
+// Accepts optional customQuery for targeted searches (e.g. LEO Pharma supplement)
+async function fetchCompanyWebSearch(company, today, customQuery) {
+  console.log(`[WebSearch] Fetching ${company.name} via web search`);
+  const searchInstruction = customQuery
+    ? `Search using this query: ${customQuery}`
+    : `Search for recent news about ${company.name} in the last 60 days`;
+  const prompt = `Pharma CI analyst. Today: ${today}. ${searchInstruction}. Focus on: regulatory filings, clinical trial results, conference presentations, pipeline updates, earnings, partnerships, and upcoming investor events. Return ONLY valid JSON no markdown: ${JSON_SCHEMA.replace('CompanyName', company.name)}`;
+  const text = await claudeWebSearch(prompt, 2000);
+  const items = parseItems(text);
+  console.log(`[WebSearch] ${company.name}: found ${items.length} items`);
+  return items;
+}
+
+// Route each company to IR fetch or web search based on config
+async function fetchCompany(company, today) {
+  const irConfig = IR_SOURCES[company.name];
+
+  // Web search only (e.g. Pfizer blocks automated fetches)
+  if (irConfig?.webSearchOnly) {
+    return fetchCompanyWebSearch(company, today);
+  }
+
+  // Has IR source URLs — fetch directly
+  if (irConfig?.sources?.length > 0) {
+    const items = await fetchCompanyFromIR(company, today);
+
+    // Supplement with targeted web search for private companies (e.g. LEO Pharma)
+    if (irConfig?.webSearchSupplementary) {
+      console.log(`[Supplementary] Running targeted web search for ${company.name}`);
+      const extraItems = await fetchCompanyWebSearch(company, today, irConfig.webSearchQuery);
+      // Merge, deduplicating by title
+      const titles = new Set(items.map(i => i.title));
+      const unique = extraItems.filter(i => !titles.has(i.title));
+      return [...items, ...unique];
+    }
+
+    return items;
+  }
+
+  // Fallback to web search
+  return fetchCompanyWebSearch(company, today);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function fetchIntel() {
+  setLoading(true, 'Initialising intelligence briefing...');
+  countdown = REFRESH_INTERVAL;
+  clearInterval(countdownTimer);
+  let secondsSince = 0;
+  document.getElementById('countdown').textContent = '00:00';
+  countdownTimer = setInterval(() => {
+    secondsSince++;
+    const m = Math.floor(secondsSince/60), s = secondsSince%60;
+    document.getElementById('countdown').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    document.getElementById('progressFill').style.width = Math.min((secondsSince / REFRESH_INTERVAL) * 100, 100)+'%';
+  }, 1000);
+
+  const today = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  let allNewItems = [];
+
+  try {
+    for (let i = 0; i < COMPANIES.length; i++) {
+      const company = COMPANIES[i];
+      const irConfig = IR_SOURCES[company.name];
+      const method = irConfig?.sources?.length > 0 ? 'IR pages' : 'web search';
+      setLoading(true, `(${i+1}/${COMPANIES.length}) Briefing ${company.name} via ${method}...`);
+
+      const items = await fetchCompany(company, today);
+      allNewItems = allNewItems.concat(items);
+
+      // Render progressively as each company comes in
+      if (allNewItems.length > 0) {
+        const partial = allNewItems.filter(item => item.url && item.url.startsWith('http'));
+        partial.forEach((item, idx) => { item._ts = Date.now() - idx * 120000; item._flagged = false; });
+        allItems = partial;
+        updateCounts();
+        buildTAPills();
+        renderFeed();
+        buildTicker(allItems);
+      }
+
+      // Delay between companies — IR fetches are slower (multiple page fetches)
+      // so they need less token-rate cooldown than web search
+      if (i < COMPANIES.length - 1) {
+        const isIR = !irConfig?.webSearchOnly && irConfig?.sources?.length > 0;
+        const delay = isIR ? 5 : 30;
+        for (let s = delay; s > 0; s--) {
+          setLoading(true, `(${i+1}/${COMPANIES.length}) ${company.name} complete — next briefing in ${s}s...`);
+          await sleep(1000);
+        }
+      }
+    }
+
+    const finalItems = allNewItems.filter(item => item.url && item.url.startsWith('http'));
+
+    if (finalItems.length === 0) {
+      showError('No verified intelligence found this briefing. Please try again.');
+      setLoading(false);
+      return;
+    }
+
+    if (lastFetchCount > 0) {
+      const b = document.getElementById('newItemsBanner');
+      b.textContent = `↑ ${finalItems.length} new intelligence items — click to scroll to top`;
+      b.style.display = 'block';
+    }
+
+    finalItems.forEach((item, i) => { item._ts = Date.now() - i * 120000; item._flagged = false; });
+    allItems = finalItems;
+    lastFetchCount = finalItems.length;
+
+    document.getElementById('lastUpdatedTime').textContent =
+      new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    await cacheSet('lumos_intel', finalItems);
+
+    updateCounts();
+    buildTAPills();
+    renderFeed();
+    buildTicker(allItems);
+  } catch(e) {
+    showError(e.message || 'Failed to fetch intelligence. Please try again.');
+    console.error(e);
+  }
+  setLoading(false);
+}
+
+
+// ── TICKER ─────────────────────────────────────────────────────────────────
+
+const COMPANY_COLORS = {
+  'ImageneBio': '#00d4ff', 'Sanofi': '#5b8def', 'Eli Lilly': '#d50032',
+  'LEO Pharma': '#ff6b35', 'Galderma': '#c084fc', 'Pfizer': '#0070c9',
+  'AbbVie': '#00a3e0', 'Apogee': '#34d399', 'Nektar Therapeutics': '#fb923c'
+};
+
+const TYPE_LABELS = {
+  conference: '🎤 CONGRESS', release: '📣 ANNOUNCEMENT', fda: '🔬 REGULATORY',
+  pipeline: '🧬 PIPELINE', partnership: '🤝 CORP DEV', financial: '📊 INVESTOR'
+};
+
+function buildTicker(items) {
+  const track = document.getElementById('tickerTrack');
+  const empty = document.getElementById('tickerEmpty');
+  if (!items || items.length === 0) {
+    track.innerHTML = '<span class="ticker-empty" id="tickerEmpty">Awaiting briefing data — click Run Briefing to populate</span>';
+    return;
+  }
+
+  // Pick up to 20 most recent items, prefer high-signal types
+  const priority = ['fda','pipeline','partnership','conference','release','financial'];
+  const sorted = [...items].sort((a, b) => {
+    const pa = priority.indexOf(a.type), pb = priority.indexOf(b.type);
+    return pa - pb;
+  }).slice(0, 20);
+
+  const itemsHTML = sorted.map(item => {
+    const color = COMPANY_COLORS[item.company] || '#888';
+    const typeLabel = TYPE_LABELS[item.type] || item.type.toUpperCase();
+    // Trim title to ~80 chars
+    const title = item.title.length > 82 ? item.title.slice(0, 79) + '…' : item.title;
+    return `<span class="ticker-item">
+      <span class="ticker-dot" style="background:${color}"></span>
+      <span class="ticker-company">${item.company}</span>
+      <span style="color:var(--muted);font-size:10px;letter-spacing:1px">${typeLabel}</span>
+      <span>${title}</span>
+    </span>`;
+  }).join('<span class="ticker-sep">·</span>');
+
+  // Duplicate for seamless loop
+  track.innerHTML = itemsHTML + '<span class="ticker-sep" style="padding:0 32px"></span>' + itemsHTML;
+
+  // Adjust animation speed based on content length
+  const totalChars = sorted.reduce((sum, i) => sum + i.title.length, 0);
+  const duration = Math.max(40, Math.min(90, totalChars * 0.35));
+  track.style.animationDuration = duration + 's';
+}
+
+function renderFeed() {
+  const feed = document.getElementById('feed');
+  let items = [...allItems];
+  if (activeTypeFilter !== 'all') items = items.filter(i => i.type === activeTypeFilter);
+  if (activeTAFilter) items = items.filter(i => i.therapeuticArea === activeTAFilter);
+  if (activeCompany) items = items.filter(i => i.company === activeCompany);
+
+  document.getElementById('resultCount').textContent = items.length;
+
+  if (!items.length) {
+    feed.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">No items match your current filters.</div></div>`;
+    return;
+  }
+
+  feed.innerHTML = items.map((item, idx) => `
+    <div class="card ${item.type}" style="animation-delay:${idx*.04}s">
+      <div class="card-header">
+        <div class="card-meta">
+          <span class="tag tag-${item.type}">${tagLabel(item.type)}</span>
+          <div class="company-logo-wrap">
+            ${companyLogoImg(item.company, 22)}
+            <span class="company-badge">${item.company}</span>
+          </div>
+          ${item.therapeuticArea ? `<span class="ta-tag">${item.therapeuticArea}</span>` : ''}
+        </div>
+        <span class="card-time">${item.time}</span>
+      </div>
+      <div class="card-title">${item.title}</div>
+      <div class="card-summary">${item.summary}</div>
+      ${item.highlight ? `
+        <div class="key-takeaway">
+          <div style="font-family:monospace;font-size:10px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:5px;font-weight:700;">Executive Insight</div>
+          ${item.highlight}
+        </div>` : ''}
+      <div class="card-footer">
+        <div class="card-source">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          ${item.source}
+        </div>
+        <div class="card-actions">
+          <div class="clinical-impact ${item.clinicalImpact}">${clinicalImpactIcon(item.clinicalImpact)} ${clinicalImpactLabel(item.clinicalImpact)}</div>
+          <button class="flag-btn ${item._flagged?'flagged':''}" title="${item._flagged?'Flagged':'Flag for review'}" onclick="toggleFlag('${item.id}',this)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="${item._flagged?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          </button>
+          <a href="${item.url}" class="card-link" target="_blank">
+            ${sourceLinkLabel(item.type)}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function tagLabel(t) {
+  return {conference:'Congress',release:'Announcement',fda:'Regulatory',financial:'Investor Update',pipeline:'Pipeline',partnership:'Corporate Development'}[t]||t;
+}
+function sourceLinkLabel(t) {
+  return {fda:'View Filing',release:'View Release',conference:'View Abstract',financial:'View Filing',pipeline:'View Source',partnership:'View Release'}[t]||'View Source';
+}
+function clinicalImpactIcon(s) { return {positive:'✚',negative:'✖',watch:'◉'}[s]||'◉'; }
+function clinicalImpactLabel(s) { return {positive:'Positive',negative:'Negative',watch:'Watch'}[s]||'Watch'; }
+
+function toggleFlag(id, btn) {
+  const item = allItems.find(i => i.id === id);
+  if (!item) return;
+  item._flagged = !item._flagged;
+  btn.classList.toggle('flagged', item._flagged);
+  btn.title = item._flagged ? 'Flagged for review' : 'Flag for review';
+}
+
+function setTypeFilter(el, filter) {
+  activeTypeFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderFeed();
+}
+
+function sortItems(by) {
+  if (by==='company') allItems.sort((a,b)=>a.company.localeCompare(b.company));
+  else if (by==='type') allItems.sort((a,b)=>a.type.localeCompare(b.type));
+  else if (by==='ta') allItems.sort((a,b)=>(a.therapeuticArea||'').localeCompare(b.therapeuticArea||''));
+  else allItems.sort((a,b)=>b._ts-a._ts);
+  renderFeed();
+}
+
+function updateCounts() {
+  document.getElementById('count-all').textContent = allItems.length;
+  ['conference','release','fda','pipeline','partnership','financial'].forEach(t => {
+    const el = document.getElementById('count-'+t);
+    if (el) el.textContent = allItems.filter(i=>i.type===t).length;
+  });
+}
+
+function dismissNewBanner() {
+  document.getElementById('newItemsBanner').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function startCountdown() {
+  // Auto-refresh disabled — manual only to save API costs
+  // Countdown display kept for UX reference
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    countdown--;
+    if (countdown <= 0) { countdown = REFRESH_INTERVAL; }
+    const m = Math.floor(countdown/60), s = countdown%60;
+    document.getElementById('countdown').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    document.getElementById('progressFill').style.width = ((countdown/REFRESH_INTERVAL)*100)+'%';
+  }, 1000);
+}
+
+function setLoading(on, msg) {
+  document.getElementById('refreshBtn').classList.toggle('loading', on);
+  document.getElementById('refreshIcon').classList.toggle('spin', on);
+  if (on) showSkeletons(msg || 'Searching the web for verified intel...');
+}
+
+function showSkeletons(msg) {
+  const statusHtml = msg ? `<div style="font-family:monospace;font-size:11px;color:var(--text-secondary);letter-spacing:1px;margin-bottom:20px;display:flex;align-items:center;gap:8px;"><span style="display:inline-block;width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite"></span>${msg}</div>` : '';
+  document.getElementById('feed').innerHTML = statusHtml + Array(5).fill(0).map(()=>`
+    <div class="skeleton">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <div class="skel-line" style="height:20px;width:80px"></div>
+        <div class="skel-line" style="height:20px;width:110px"></div>
+        <div class="skel-line" style="height:20px;width:90px"></div>
+      </div>
+      <div class="skel-line long" style="height:18px;margin-bottom:14px"></div>
+      <div class="skel-line medium"></div>
+      <div class="skel-line long"></div>
+      <div class="skel-line" style="width:50%"></div>
+    </div>`).join('');
+}
+
+function showError(msg) {
+  document.getElementById('feed').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text" style="color:#ef4444">${msg}</div></div>`;
+}
+
+
+
+// ── CLINICAL TRIALS ────────────────────────────────────────────────────────
+
+let ctAllItems = [];       // raw fetched trials
+let ctFiltered = [];       // after filters applied
+let ctActiveProduct = null;
+let ctActiveStatus = 'all';
+let ctActivePhase = 'all';
+
+const CT_API = 'https://clinicaltrials.gov/api/v2/studies';
+
+// Disease areas to search
+const CT_DISEASE_AREAS = {
+  'Atopic Dermatitis':  'atopic dermatitis',
+  'Alopecia Areata':    'alopecia areata',
+  'Prurigo Nodularis':  'prurigo nodularis',
+  'Asthma':            'asthma',
+};
+
+function buildCTProductPills() {
+  const container = document.getElementById('ctProductPills');
+  container.innerHTML = Object.keys(CT_DISEASE_AREAS).map(p => {
+    return '<div class="ct-product-pill ' + (ctActiveProduct===p?'active':'') + '" onclick="setCTProduct(this.dataset.p,this)" data-p="' + p + '">' + p + '</div>';
+  }).join('');
+}
+
+function setCTProduct(product, el) {
+  if (ctActiveProduct === product) {
+    ctActiveProduct = null;
+    document.querySelectorAll('.ct-product-pill').forEach(p => p.classList.remove('active'));
+  } else {
+    ctActiveProduct = product;
+    document.querySelectorAll('.ct-product-pill').forEach(p => p.classList.remove('active'));
+    if (el) el.classList.add('active');
+  }
+  renderCTFeed();
+}
+
+function setCTFilter(type, value, el) {
+  if (type === 'status') {
+    ctActiveStatus = value;
+    document.querySelectorAll('.status-pill').forEach(p => p.classList.remove('active'));
+  } else {
+    ctActivePhase = value;
+    document.querySelectorAll('.phase-pill').forEach(p => p.classList.remove('active'));
+  }
+  el.classList.add('active');
+  renderCTFeed();
+}
+
+function getStatusClass(status) {
+  if (!status) return '';
+  const s = status.toUpperCase();
+  if (s === 'RECRUITING') return 'recruiting';
+  if (s === 'ACTIVE_NOT_RECRUITING') return 'active';
+  if (s === 'COMPLETED') return 'completed';
+  if (s === 'TERMINATED' || s === 'WITHDRAWN') return 'terminated';
+  if (s === 'NOT_YET_RECRUITING') return 'not_yet_recruiting';
+  if (s === 'ENROLLING_BY_INVITATION') return 'enrolling_by_invitation';
+  return '';
+}
+
+function formatStatus(status) {
+  if (!status) return '—';
+  return {
+    'RECRUITING': 'Recruiting',
+    'ACTIVE_NOT_RECRUITING': 'Active (Not Recruiting)',
+    'COMPLETED': 'Completed',
+    'TERMINATED': 'Terminated',
+    'WITHDRAWN': 'Withdrawn',
+    'NOT_YET_RECRUITING': 'Not Yet Recruiting',
+    'ENROLLING_BY_INVITATION': 'Enrolling by Invitation',
+    'UNKNOWN': 'Unknown',
+  }[status.toUpperCase()] || status;
+}
+
+function formatPhase(phases) {
+  if (!phases || !phases.length) return '—';
+  return phases.map(p => p.replace('PHASE','Phase ').replace('EARLY_PHASE1','Early Phase 1')).join(', ');
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  try { return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); }
+  catch(e) { return dateStr; }
+}
+
+async function fetchTrialsForProduct(diseaseArea) {
+  const conditionTerm = CT_DISEASE_AREAS[diseaseArea] || diseaseArea;
+  let allStudies = [];
+  let nextPageToken = null;
+  let page = 0;
+
+  do {
+    const params = new URLSearchParams({
+      'query.cond': conditionTerm,
+      'pageSize': '100',
+      'fields': 'NCTId,BriefTitle,OverallStatus,Phase,Condition,StartDate,PrimaryCompletionDate,EnrollmentCount,LeadSponsorName,InterventionName',
+      'sort': 'StartDate:desc',
+    });
+    if (nextPageToken) params.set('pageToken', nextPageToken);
+
+    const resp = await fetch(CT_API + '?' + params);
+    if (!resp.ok) break;
+    const data = await resp.json();
+    const studies = (data.studies || []).map(s => {
+      const p = s.protocolSection || {};
+      const id = p.identificationModule || {};
+      const status = p.statusModule || {};
+      const design = p.designModule || {};
+      const sponsor = p.sponsorCollaboratorsModule || {};
+      const interventions = (p.armsInterventionsModule?.interventions || []);
+      return {
+        nctId: id.nctId,
+        title: id.briefTitle,
+        status: status.overallStatus,
+        phases: design.phases || [],
+        conditions: (p.conditionsModule?.conditions || []),
+        startDate: status.startDateStruct?.date,
+        completionDate: status.primaryCompletionDateStruct?.date,
+        enrollment: design.enrollmentInfo?.count,
+        sponsor: sponsor.leadSponsor?.name,
+        interventions: interventions.map(i => i.name).filter(Boolean),
+        diseaseArea: diseaseArea,
+        product: diseaseArea,
+      };
+    });
+    allStudies = allStudies.concat(studies);
+    nextPageToken = data.nextPageToken;
+    page++;
+  } while (nextPageToken && page < 5);
+
+  // Dedupe by NCT ID
+  const seen = new Set();
+  return allStudies.filter(s => {
+    if (!s.nctId || seen.has(s.nctId)) return false;
+    seen.add(s.nctId);
+    return true;
+  });
+}
+
+function renderCTFeed() {
+  const feed = document.getElementById('ctFeed');
+  let items = [...ctAllItems];
+
+  if (ctActiveProduct) items = items.filter(i => i.product === ctActiveProduct);
+  if (ctActiveStatus !== 'all') items = items.filter(i => i.status && i.status.toUpperCase() === ctActiveStatus);
+  if (ctActivePhase !== 'all') items = items.filter(i => i.phases && i.phases.some(p => p.toUpperCase() === ctActivePhase));
+
+  ctFiltered = items;
+  document.getElementById('ctResultCount').textContent = items.length;
+
+  if (!items.length) {
+    feed.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">No trials match your filters.</div></div>`;
+    return;
+  }
+
+  feed.innerHTML = items.map((item, idx) => {
+    const sc = getStatusClass(item.status);
+    const enrollmentBig = item.enrollment ? item.enrollment.toLocaleString() : '—';
+    const phaseBig = item.phases.length ? formatPhase(item.phases) : '—';
+    return `
+    <div class="ct-card ${sc}" style="animation-delay:${idx*.03}s">
+      <div class="ct-meta">
+        <span class="status-tag ${sc}">${formatStatus(item.status)}</span>
+        ${item.phases.length ? `<span class="phase-tag">${formatPhase(item.phases)}</span>` : ''}
+        <span class="ct-product-tag">${item.diseaseArea || item.product}</span>
+        ${item.sponsor ? `<div class="company-logo-wrap" style="margin-left:4px">${companyLogoImg(item.sponsor,18)}<span class="company-badge" style="font-size:11px">${item.sponsor}</span></div>` : ''}
+      </div>
+      <div class="ct-title">${item.title || '—'}</div>
+      <div style="display:flex;gap:20px;margin-bottom:14px;">
+        <div style="background:var(--surface2);border:1px solid var(--border-mid);border-radius:6px;padding:12px 20px;text-align:center;min-width:100px;">
+          <div style="font-family:monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Phase</div>
+          <div style="font-family:monospace;font-size:22px;font-weight:700;color:var(--text);line-height:1">${phaseBig}</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border-mid);border-radius:6px;padding:12px 20px;text-align:center;min-width:100px;">
+          <div style="font-family:monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Enrollment</div>
+          <div style="font-family:monospace;font-size:22px;font-weight:700;color:var(--text);line-height:1">${enrollmentBig}</div>
+          ${item.enrollment ? `<div style="font-family:monospace;font-size:10px;color:var(--muted);margin-top:2px;">patients</div>` : ''}
+        </div>
+        <div style="flex:1;background:var(--surface2);border:1px solid var(--border-mid);border-radius:6px;padding:12px 16px;">
+          <div style="font-family:monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">Timeline</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div>
+              <div style="font-family:monospace;font-size:10px;color:var(--muted)">Start</div>
+              <div style="font-family:monospace;font-size:13px;color:var(--text)">${formatDate(item.startDate)}</div>
+            </div>
+            <div style="flex:1;height:2px;background:var(--border);border-radius:1px;position:relative;">
+              <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:var(--accent)"></div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-family:monospace;font-size:10px;color:var(--muted)">Est. Completion</div>
+              <div style="font-family:monospace;font-size:13px;color:var(--text)">${formatDate(item.completionDate)}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ct-footer">
+        <span class="ct-nct">${item.nctId || ''}</span>
+        <a href="https://clinicaltrials.gov/study/${item.nctId}" class="ct-link" target="_blank">
+          View Trial
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function fetchAllTrials() {
+  const btn = document.getElementById('ctLoadBtn');
+  btn.disabled = true;
+  btn.textContent = 'Fetching pipeline data…';
+  ctAllItems = [];
+  ctActiveProduct = null;
+  document.querySelectorAll('.ct-product-pill').forEach(p => p.classList.remove('active'));
+  document.getElementById('ctFeed').innerHTML = '';
+  document.getElementById('ctResultCount').textContent = '0';
+
+  const areas = Object.keys(CT_DISEASE_AREAS);
+  for (let i = 0; i < areas.length; i++) {
+    const area = areas[i];
+    btn.textContent = 'Retrieving ' + area + ' data (' + (i+1) + ' of ' + areas.length + ')…';
+    try {
+      const trials = await fetchTrialsForProduct(area);
+      ctAllItems = ctAllItems.concat(trials);
+      renderCTFeed();
+    } catch(e) {
+      console.error('CT fetch error for', area, e);
+    }
+    if (i < areas.length - 1) await sleep(400);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '⟳ Refresh Pipeline Data';
+
+  // Save to cache
+  if (ctAllItems.length > 0) {
+    await cacheSet('lumos_trials', ctAllItems);
+    console.log('[Cache] Saved', ctAllItems.length, 'trials');
+  }
+}
+
+
+
+// ── PERSISTENT CACHE ───────────────────────────────────────────────────────
+// Uses window.storage (Claude artifacts) with localStorage fallback
+
+async function cacheSet(key, value) {
+  const payload = JSON.stringify({ data: value, savedAt: Date.now() });
+  try {
+    if (window.storage) {
+      await window.storage.set(key, payload, true); // shared=true so all users see it
+    } else {
+      localStorage.setItem(key, payload);
+    }
+  } catch(e) { console.warn('Cache write failed:', e); }
+}
+
+async function cacheGet(key) {
+  try {
+    if (window.storage) {
+      const result = await window.storage.get(key, true);
+      if (result && result.value) return JSON.parse(result.value);
+    } else {
+      const raw = localStorage.getItem(key);
+      if (raw) return JSON.parse(raw);
+    }
+  } catch(e) { console.warn('Cache read failed:', e); }
+  return null;
+}
+
+function formatCacheDate(ts) {
+  if (!ts) return 'unknown';
+  return new Date(ts).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function showCacheBadge(elementId, savedAt) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.style.display = 'flex';
+  el.innerHTML = '<span style="color:var(--muted)">Showing cached data from ' + formatCacheDate(savedAt) + ' — click Refresh to update</span>';
+}
+
+async function loadCachedTrials() {
+  const cached = await cacheGet('lumos_trials');
+  if (cached && cached.data && cached.data.length > 0) {
+    ctAllItems = cached.data;
+    renderCTFeed();
+    const btn = document.getElementById('ctLoadBtn');
+    if (btn) btn.textContent = '⟳ Refresh Pipeline Data';
+    const statusEl = document.getElementById('ctStatus');
+    if (statusEl) {
+      statusEl.style.display = 'flex';
+      statusEl.innerHTML = '<span style="color:var(--muted)">Showing cached data from ' + formatCacheDate(cached.savedAt) + ' — click Refresh to update</span>';
+    }
+  }
+}
+
+// ── CONFERENCE SCANNER ─────────────────────────────────────────────────────
+
+const FIXED_PRODUCTS = [
+  'Dupixent (dupilumab)',
+  'Adbry (tralokinumab)',
+  'Nemluvio (nemolizumab)',
+  'Ebglyss (lebrikizumab)',
+  'Anzupgo (delgocitinib)',
+  'Amlitelimab',
+  'Temtokibart',
+  'IMG-007',
+  'APG777 (zumilikobart)',
+  'APG279',
+  'Rocatinlimab'
+];
+
+let confItems = [];
+let activeConfYear = 'all';
+let activeConfFilter = 'all';
+let activeConfCompany = null;
+let activeConfProduct = null;
+
+
+// ── CALENDAR ───────────────────────────────────────────────────────────────
+
+let calEvents = [];           // all fetched calendar events
+let calActiveCompanies = new Set(COMPANIES.map(c => c.name)); // all selected by default
+let calActiveType = 'all';
+let calView = 'upcoming';
+let calCurrentMonth = new Date();
+calCurrentMonth.setDate(1);
+
+const EVENT_TYPE_COLORS = {
+  earnings: '#a78bfa', conference: '#00d4ff', presentation: '#10b981',
+  agm: '#f59e0b', readout: '#f472b6', other: '#888'
+};
+
+const EVENT_TYPE_LABELS = {
+  earnings: 'EARNINGS',
+  conference: 'CONFERENCE',
+  presentation: 'PRESENTATION',
+  agm: 'ANNUAL GENERAL MEETING',
+  readout: 'DATA READOUT',
+  other: 'EVENT'
+};
+
+// Classify an event title into a type
+function classifyEventType(title) {
+  const t = (title || '').toLowerCase();
+  if (/earnings|financial results|quarterly|q[1-4] 20|revenue|guidance/.test(t)) return 'earnings';
+  if (/annual general|agm|shareholder meeting|general meeting/.test(t)) return 'agm';
+  if (/data readout|trial results|phase [123]|clinical data|topline|interim results|study results/.test(t)) return 'readout';
+  if (/conference|summit|symposium|congress|forum|healthcare conference|investor day|r&d day/.test(t)) return 'conference';
+  if (/presentation|webcast|fireside|investor call|analyst call/.test(t)) return 'presentation';
+  return 'other';
+}
+
+function buildCalCompanyList() {
+  const list = document.getElementById('calCompanyList');
+  if (!list) return;
+  list.innerHTML =
+    '<div class="pipe-company-all-btn" onclick="selectAllCalCompanies()">Show All</div>' +
+    COMPANIES.map(c =>
+      '<div class="cal-company-item active" data-company="' + c.name + '" onclick="toggleCalCompany(this.dataset.company,this)">' +
+        '<div class="cal-company-check">✓</div>' +
+        '<div class="company-dot" style="background:' + c.color + '"></div>' +
+        '<span style="flex:1">' + c.name + '</span>' +
+        '<span class="pipe-company-only" onclick="event.stopPropagation();onlyCalCompany(this.parentElement.dataset.company)">Only</span>' +
+      '</div>'
+    ).join('');
+}
+
+function onlyCalCompany(name) {
+  calActiveCompanies = new Set([name]);
+  document.querySelectorAll('#calCompanyList .cal-company-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.company === name);
+  });
+  renderCalendar();
+}
+
+function selectAllCalCompanies() {
+  calActiveCompanies = new Set(COMPANIES.map(c => c.name));
+  document.querySelectorAll('#calCompanyList .cal-company-item').forEach(el => el.classList.add('active'));
+  renderCalendar();
+}
+
+function toggleCalCompany(name, el) {
+  if (calActiveCompanies.has(name)) {
+    calActiveCompanies.delete(name);
+    el.classList.remove('active');
+  } else {
+    calActiveCompanies.add(name);
+    el.classList.add('active');
+  }
+  renderCalendar();
+}
+
+function setCalType(type, el) {
+  calActiveType = type;
+  document.querySelectorAll('.cal-type-pill').forEach(p => {
+    if (p.onclick && p.onclick.toString().includes('setCalType')) p.classList.remove('active');
+  });
+  el.classList.add('active');
+  renderCalendar();
+}
+
+function setCalView(view, el) {
+  calView = view;
+  document.querySelectorAll('.cal-type-pill').forEach(p => {
+    if (p.onclick && p.onclick.toString().includes('setCalView')) p.classList.remove('active');
+  });
+  el.classList.add('active');
+  document.getElementById('calMonthView').style.display = view === 'month' ? 'block' : 'none';
+  document.getElementById('calUpcomingView').style.display = view === 'upcoming' ? 'block' : 'none';
+  renderCalendar();
+}
+
+function getFilteredEvents() {
+  return calEvents.filter(e => {
+    if (!calActiveCompanies.has(e.company)) return false;
+    if (calActiveType !== 'all' && e.eventType !== calActiveType) return false;
+    return true;
+  });
+}
+
+function renderCalendar() {
+  if (calView === 'month') renderMonthView();
+  else renderUpcomingView();
+}
+
+function renderUpcomingView() {
+  const now = new Date();
+  const feed = document.getElementById('calFeed');
+  const label = document.getElementById('calUpcomingLabel');
+  let events = getFilteredEvents()
+    .filter(e => e.date && new Date(e.date) >= new Date(now.toDateString()))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  document.getElementById('calResultCount').textContent = events.length;
+  if (label) label.textContent = events.length
+    ? `${events.length} Upcoming Event${events.length !== 1 ? 's' : ''}`
+    : 'Upcoming Events';
+
+  if (!events.length) {
+    feed.innerHTML = `<div class="empty"><div class="empty-icon" style="font-size:32px;opacity:.15;font-family:monospace;letter-spacing:4px;">CAL</div><div class="empty-text">No upcoming events found. Click Refresh Calendar to populate.</div></div>`;
+    return;
+  }
+
+  // Separate "this week" from the rest
+  const weekEnd = new Date(now); weekEnd.setDate(now.getDate() + 7);
+  const thisWeek = events.filter(e => new Date(e.date) <= weekEnd);
+  const later = events.filter(e => new Date(e.date) > weekEnd);
+
+  // Group later events by month
+  const byMonth = {};
+  later.forEach(e => {
+    const d = new Date(e.date);
+    const key = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    if (!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push(e);
+  });
+
+  function renderCard(ev, idx) {
+    const d = new Date(ev.date);
+    const color = COMPANIES.find(c => c.name === ev.company)?.color || '#888';
+    const typeColor = EVENT_TYPE_COLORS[ev.eventType] || '#888';
+    const isToday = d.toDateString() === now.toDateString();
+    const daysAway = Math.ceil((d - now) / (1000*60*60*24));
+    const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+    const day = d.getDate();
+    const year = d.getFullYear();
+    const irUrl = IR_SOURCES[ev.company]?.ir || '';
+
+    return `<div class="cal-event-card" style="animation-delay:${idx*.03}s">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:${color};border-radius:3px 0 0 3px;"></div>
+      <div class="cal-event-date-block" style="border-color:${isToday ? typeColor : ''};">
+        <div class="cal-event-month" style="color:${isToday ? typeColor : ''}">${month}</div>
+        <div class="cal-event-day" style="color:${isToday ? typeColor : ''}">${day}</div>
+        <div class="cal-event-year">${year}</div>
+      </div>
+      <div class="cal-event-body">
+        <div class="company-logo-wrap" style="margin-bottom:6px;">
+          ${companyLogoImg(ev.company, 20)}
+          <span class="cal-event-company" style="color:${color}">${ev.company}</span>
+        </div>
+        <div class="cal-event-title">${ev.title}</div>
+        ${ev.description ? `<div class="cal-event-desc">${ev.description}</div>` : ''}
+        <div class="cal-event-meta">
+          <span class="cal-event-type ${ev.eventType}">${ev.eventType.toUpperCase()}</span>
+          ${ev.time ? `<span class="cal-event-time">${ev.time}</span>` : ''}
+          ${isToday ? `<span style="font-family:monospace;font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1px;border:1px solid var(--accent);padding:2px 7px;border-radius:3px;">TODAY</span>` : daysAway <= 7 ? `<span style="font-family:monospace;font-size:11px;color:var(--amber);letter-spacing:.5px;">In ${daysAway} day${daysAway!==1?'s':''}</span>` : ''}
+          ${irUrl ? `<a class="cal-event-link" href="${irUrl}" target="_blank" rel="noopener">IR PAGE ↗</a>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  let html = '';
+
+  // This week section
+  if (thisWeek.length) {
+    html += `<div style="font-family:monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--accent);text-transform:uppercase;padding:6px 0 12px 0;border-bottom:1px solid var(--border);margin-bottom:14px;">This Week — ${thisWeek.length} Event${thisWeek.length!==1?'s':''}</div>`;
+    html += thisWeek.map((ev, i) => renderCard(ev, i)).join('');
+  }
+
+  // Monthly groups
+  Object.entries(byMonth).forEach(([month, monthEvents]) => {
+    html += `<div style="font-family:monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--text-secondary);text-transform:uppercase;padding:20px 0 12px 0;border-bottom:1px solid var(--border);margin-bottom:14px;">${month} — ${monthEvents.length} Event${monthEvents.length!==1?'s':''}</div>`;
+    html += monthEvents.map((ev, i) => renderCard(ev, i)).join('');
+  });
+
+  feed.innerHTML = html;
+}
+
+function renderMonthView() {
+  const grid = document.getElementById('calGrid');
+  const label = document.getElementById('calMonthLabel');
+  const events = getFilteredEvents();
+  const year = calCurrentMonth.getFullYear();
+  const month = calCurrentMonth.getMonth();
+  const monthName = calCurrentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  label.textContent = monthName.toUpperCase();
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+
+  // Group events by date string
+  const byDate = {};
+  events.forEach(e => {
+    if (!e.date) return;
+    const d = new Date(e.date);
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      const key = d.getDate();
+      if (!byDate[key]) byDate[key] = [];
+      byDate[key].push(e);
+    }
+  });
+
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  let html = days.map(d => `<div class="cal-day-header">${d}</div>`).join('');
+
+  // Empty cells before month starts
+  for (let i = 0; i < firstDay; i++) html += `<div class="cal-cell other-month"></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = today.getDate() === d && today.getMonth() === month && today.getFullYear() === year;
+    const dayEvents = byDate[d] || [];
+    const maxShow = 3;
+    const extra = dayEvents.length - maxShow;
+    const evDots = dayEvents.slice(0, maxShow).map(e => {
+      const color = COMPANIES.find(c => c.name === e.company)?.color || '#888';
+      return `<div class="cal-event-dot" title="${e.company}: ${e.title}">
+        <div class="cal-event-pip" style="background:${color}"></div>
+        <span class="cal-event-label">${e.title}</span>
+      </div>`;
+    }).join('');
+
+    html += `<div class="cal-cell ${isToday ? 'today' : ''} ${dayEvents.length ? 'has-events' : ''}">
+      <div class="cal-date">${d}</div>
+      ${evDots}
+      ${extra > 0 ? `<div class="cal-more">+${extra} more</div>` : ''}
+    </div>`;
+  }
+
+  // Fill remaining cells
+  const totalCells = firstDay + daysInMonth;
+  const remainder = totalCells % 7;
+  if (remainder > 0) {
+    for (let i = 0; i < 7 - remainder; i++) html += `<div class="cal-cell other-month"></div>`;
+  }
+
+  grid.innerHTML = html;
+  document.getElementById('calResultCount').textContent = events.filter(e => {
+    const d = new Date(e.date);
+    return d.getFullYear() === year && d.getMonth() === month;
+  }).length;
+}
+
+function calChangeMonth(dir) {
+  calCurrentMonth.setMonth(calCurrentMonth.getMonth() + dir);
+  renderMonthView();
+}
+
+function closeCalModal(e) {
+  if (!e || e.target === document.getElementById('calModal')) {
+    document.getElementById('calModal').classList.remove('open');
+  }
+}
+
+// Fetch calendar events from all company IR pages using Claude
+async function fetchCalendarEvents() {
+  const btn = document.getElementById('calLoadBtn');
+  btn.disabled = true;
+  const statusEl = document.getElementById('calStatus');
+  statusEl.textContent = 'Fetching upcoming events from investor relations pages...';
+
+  const today = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  let allEvents = [];
+
+  for (let i = 0; i < COMPANIES.length; i++) {
+    const company = COMPANIES[i];
+    const irConfig = IR_SOURCES[company.name];
+    statusEl.textContent = `(${i+1}/${COMPANIES.length}) Scanning ${company.name} for upcoming events...`;
+
+    try {
+      const events = await fetchCompanyCalendarEvents(company, today, irConfig);
+      allEvents = allEvents.concat(events);
+    } catch(e) {
+      console.error('Calendar fetch error for', company.name, e);
+    }
+
+    if (i < COMPANIES.length - 1) await sleep(5000);
+  }
+
+  calEvents = allEvents;
+  await cacheSet('lumos_calendar', calEvents);
+  statusEl.textContent = `${calEvents.length} events loaded across ${COMPANIES.length} companies`;
+  buildCalCompanyList();
+  renderCalendar();
+  btn.disabled = false;
+}
+
+async function fetchCompanyCalendarEvents(company, today, irConfig) {
+  // Build URL list focused on events pages
+  const eventUrls = (irConfig?.sources || [])
+    .filter(s => /event|presentation|conference|webcast|news/i.test(s.label))
+    .map(s => s.url);
+
+  let sourceContext = '';
+  if (eventUrls.length > 0 && !irConfig?.webSearchOnly) {
+    // Fetch event pages directly
+    const pages = await Promise.all(eventUrls.map(url => fetchIRPage(url)));
+    sourceContext = pages.filter(Boolean).join('\n\n').substring(0, 6000);
+  }
+
+  const searchHint = sourceContext
+    ? `Use this content from ${company.name}'s official IR pages:\n${sourceContext}`
+    : `Search for upcoming events and presentations for ${company.name}`;
+
+  const prompt = `You are a pharma executive calendar assistant. Today: ${today}.
+
+${searchHint}
+
+Extract ALL upcoming investor events for ${company.name} — earnings calls, conference presentations, investor days, AGMs, R&D days, scientific congress presentations, data readouts, and webcasts.
+
+Include events happening in the next 12 months. Also include very recent past events from last 30 days.
+
+Return ONLY valid JSON, no markdown:
+{"events":[{
+  "company":"${company.name}",
+  "title":"Event name/title",
+  "date":"YYYY-MM-DD",
+  "time":"HH:MM AM/PM TZ or empty string",
+  "eventType":"earnings|conference|presentation|agm|readout|other",
+  "description":"1-2 sentence description",
+  "url":"https://... or empty string"
+}]}
+
+Rules:
+- company must be exactly "${company.name}"
+- date must be YYYY-MM-DD format
+- Only include events with confirmed dates
+- Be specific about event names`;
+
+  const text = await claudeCall(prompt, 1500);
+  try {
+    const clean = text.replace(/\`\`\`json|\`\`\`/g, '').trim();
+    const match = clean.match(/\{[\s\S]*\}/);
+    if (!match) return [];
+    const parsed = JSON.parse(match[0]);
+    return (parsed.events || []).map(e => ({ ...e, eventType: e.eventType || classifyEventType(e.title) }));
+  } catch(err) {
+    console.error('Calendar parse error for', company.name, err);
+    return [];
+  }
+}
+
+async function loadCachedCalendar() {
+  const cached = await cacheGet('lumos_calendar');
+  if (cached && cached.data && cached.data.length > 0) {
+    calEvents = cached.data;
+    buildCalCompanyList();
+    renderCalendar();
+    const statusEl = document.getElementById('calStatus');
+    if (statusEl) statusEl.textContent = 'Briefing data as of ' + formatCacheDate(cached.savedAt) + ' — click Refresh Calendar to update';
+  }
+}
+
+
+// ── PIPELINE ───────────────────────────────────────────────────────────────
+
+let pipelineData = [];
+let pipeActiveCompanies = new Set(COMPANIES.map(c => c.name));
+let pipeActiveTA = 'all';
+let pipeActivePhase = 'all';
+
+const PHASE_ORDER = ['approved', 'nda', '3', '2', '1', 'preclinical'];
+const PHASE_LABELS = {
+  'approved': 'Approved / Marketed',
+  'nda': 'NDA / BLA Filed',
+  '3': 'Phase 3',
+  '2': 'Phase 2',
+  '1': 'Phase 1',
+  'preclinical': 'Preclinical'
+};
+const PHASE_KEYS = {
+  'approved': 'phase-approved',
+  'nda': 'phase-nda',
+  '3': 'phase-3',
+  '2': 'phase-2',
+  '1': 'phase-1',
+  'preclinical': 'phase-preclinical'
+};
+
+function normalizePhase(phase) {
+  const p = (phase || '').toLowerCase().trim();
+  if (/approv|market|commerci/.test(p)) return 'approved';
+  if (/nda|bla|filed|submit|registration/.test(p)) return 'nda';
+  if (/phase.?3|ph.?3|3rd/.test(p)) return '3';
+  if (/phase.?2|ph.?2|2nd/.test(p)) return '2';
+  if (/phase.?1|ph.?1|1st|first.in.human|fih/.test(p)) return '1';
+  if (/preclin|discovery|research|pre-?ind/.test(p)) return 'preclinical';
+  return '1'; // default
+}
+
+function buildPipeCompanyList() {
+  const list = document.getElementById('pipeCompanyList');
+  if (!list) return;
+  list.innerHTML =
+    '<div class="pipe-company-all-btn" onclick="selectAllPipeCompanies()">Show All</div>' +
+    COMPANIES.map(c =>
+      '<div class="cal-company-item active" data-company="' + c.name + '" onclick="togglePipeCompany(this.dataset.company,this)">' +
+        '<div class="cal-company-check">✓</div>' +
+        '<div class="company-dot" style="background:' + c.color + '"></div>' +
+        '<span style="flex:1">' + c.name + '</span>' +
+        '<span class="pipe-company-only" onclick="event.stopPropagation();onlyPipeCompany(this.parentElement.dataset.company)">Only</span>' +
+      '</div>'
+    ).join('');
+}
+
+function onlyPipeCompany(name) {
+  pipeActiveCompanies = new Set([name]);
+  document.querySelectorAll('#pipeCompanyList .cal-company-item').forEach(el => {
+    const isActive = el.dataset.company === name;
+    el.classList.toggle('active', isActive);
+  });
+  renderPipeline();
+}
+
+function selectAllPipeCompanies() {
+  pipeActiveCompanies = new Set(COMPANIES.map(c => c.name));
+  document.querySelectorAll('#pipeCompanyList .cal-company-item').forEach(el => el.classList.add('active'));
+  renderPipeline();
+}
+
+function togglePipeCompany(name, el) {
+  if (pipeActiveCompanies.has(name)) {
+    pipeActiveCompanies.delete(name);
+    el.classList.remove('active');
+  } else {
+    pipeActiveCompanies.add(name);
+    el.classList.add('active');
+  }
+  renderPipeline();
+}
+
+function buildPipeTAPills() {
+  const tas = [...new Set(pipelineData.map(p => p.therapeuticArea).filter(Boolean))].sort();
+  const container = document.getElementById('pipeTAPills');
+  container.innerHTML = `<div class="pipe-ta-pill ${pipeActiveTA==='all'?'active':''}" onclick="setPipeTA('all',this)">All</div>` +
+    tas.map(ta => `<div class="pipe-ta-pill ${pipeActiveTA===ta?'active':''}" onclick="setPipeTA('${ta.replace(/'/g,"\\'")}',this)">${ta}</div>`).join('');
+}
+
+function setPipeTA(ta, el) {
+  pipeActiveTA = ta;
+  document.querySelectorAll('#pipeTAPills .pipe-ta-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderPipeline();
+}
+
+function setPipePhase(phase, el) {
+  pipeActivePhase = phase;
+  document.querySelectorAll('#pipePhasePills .pipe-ta-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderPipeline();
+}
+
+function getFilteredPipeline() {
+  return pipelineData.filter(p => {
+    if (!pipeActiveCompanies.has(p.company)) return false;
+    if (pipeActiveTA !== 'all' && p.therapeuticArea !== pipeActiveTA) return false;
+    if (pipeActivePhase !== 'all' && normalizePhase(p.phase) !== pipeActivePhase) return false;
+    return true;
+  });
+}
+
+const PHASE_COLS = ['preclinical','1','2','3','nda','approved'];
+const PHASE_COL_LABELS = {
+  'preclinical': 'Preclinical',
+  '1': 'Phase 1',
+  '2': 'Phase 2',
+  '3': 'Phase 3',
+  'nda': 'NDA / BLA',
+  'approved': 'Approved'
+};
+const PHASE_COLORS = {
+  'preclinical': '#444',
+  '1': '#5b8def',
+  '2': '#a78bfa',
+  '3': '#f59e0b',
+  'nda': '#10b981',
+  'approved': '#00d4ff'
+};
+
+// Show tooltip on bar hover
+let pipeTooltip = null;
+function showPipeTooltipByIdx(e, el) {
+  const idx = parseInt(el.dataset.pipeIdx);
+  const item = getFilteredPipeline()[idx] || pipelineData[idx];
+  if (item) showPipeTooltip(e, item);
+}
+
+function showPipeTooltip(e, item) {
+  if (!pipeTooltip) pipeTooltip = document.getElementById('pipeTooltip');
+  const color = COMPANIES.find(c => c.name === item.company)?.color || '#888';
+  pipeTooltip.innerHTML = `
+    <div class="pipe-tooltip-product">${item.product || '—'}${item.genericName ? ' <span style="font-weight:400;color:var(--muted)">/ ' + item.genericName + '</span>' : ''}</div>
+    <div class="pipe-tooltip-company" style="color:${color}">${item.company}</div>
+    <div class="pipe-tooltip-indication">${item.indication || '—'}</div>
+    ${item.modality ? '<div class="pipe-tooltip-modality">' + item.modality + '</div>' : ''}
+    ${item.nextMilestone ? '<div class="pipe-tooltip-milestone">Next: ' + item.nextMilestone + '</div>' : ''}
+  `;
+  pipeTooltip.style.left = Math.min(e.clientX + 16, window.innerWidth - 300) + 'px';
+  pipeTooltip.style.top = (e.clientY - 60) + 'px';
+  pipeTooltip.classList.add('visible');
+}
+function hidePipeTooltip() {
+  if (!pipeTooltip) pipeTooltip = document.getElementById('pipeTooltip');
+  pipeTooltip.classList.remove('visible');
+}
+
+function renderPipeline() {
+  const feed = document.getElementById('pipeFeed');
+  const items = getFilteredPipeline();
+  document.getElementById('pipeResultCount').textContent = items.length;
+
+  if (!items.length) {
+    feed.innerHTML = '<div class="empty"><div class="empty-icon" style="font-size:32px;opacity:.15;font-family:monospace;letter-spacing:4px;">R&D</div><div class="empty-text">No pipeline assets match your filters. Click Refresh Pipeline to load.</div></div>';
+    return;
+  }
+
+  // Group by therapeutic area
+  const byTA = {};
+  items.forEach(item => {
+    const ta = item.therapeuticArea || 'Other';
+    if (!byTA[ta]) byTA[ta] = [];
+    byTA[ta].push(item);
+  });
+  const taOrder = Object.keys(byTA).sort();
+
+  // Column headers
+  const headers = '<div class="pipe-col-headers">' +
+    '<div class="pipe-col-spacer"></div>' +
+    PHASE_COLS.map(ph =>
+      '<div class="pipe-col-header ph-' + ph + '">' + PHASE_COL_LABELS[ph] + '</div>'
+    ).join('') +
+    '</div>';
+
+  // Legend
+  const legend = '<div class="pipe-legend">' +
+    PHASE_COLS.map(ph =>
+      '<div class="pipe-legend-item">' +
+      '<div class="pipe-legend-dot" style="background:' + PHASE_COLORS[ph] + '"></div>' +
+      '<div class="pipe-legend-label">' + PHASE_COL_LABELS[ph] + '</div>' +
+      '</div>'
+    ).join('') +
+    '</div>';
+
+  // Rows per TA
+  const taSections = taOrder.map(ta => {
+    const taItems = byTA[ta].sort((a,b) => {
+      // Sort by company then product
+      if (a.company < b.company) return -1;
+      if (a.company > b.company) return 1;
+      return (a.product||'').localeCompare(b.product||'');
+    });
+
+    const rows = taItems.map(item => {
+      const ph = normalizePhase(item.phase);
+      const color = COMPANIES.find(c => c.name === item.company)?.color || '#888';
+      const phaseIdx = PHASE_COLS.indexOf(ph);
+
+      // Build 6 cells, filled bar only in the matching phase column
+      const cells = PHASE_COLS.map((col, idx) => {
+        if (idx === phaseIdx) {
+          // Active phase — show filled bar
+          // Store item data in dataset to avoid inline JSON escaping issues
+          const dataIdx = pipelineData.indexOf(item);
+          return '<div class="pipe-cell">' +
+            '<div class="pipe-bar ph-' + ph + '" ' +
+              'data-pipe-idx="' + dataIdx + '" ' +
+              'onmouseenter="showPipeTooltipByIdx(event,this)" ' +
+              'onmouseleave="hidePipeTooltip()">' +
+              PHASE_COL_LABELS[ph].toUpperCase() +
+            '</div>' +
+            '</div>';
+        }
+        // Empty cell with subtle progression dots for prior phases
+        if (idx < phaseIdx) {
+          return '<div class="pipe-cell" style="background:rgba(255,255,255,.01)">' +
+            '<div style="width:100%;height:2px;background:' + PHASE_COLORS[PHASE_COLS[idx]] + '20;border-radius:1px;"></div>' +
+            '</div>';
+        }
+        return '<div class="pipe-cell"></div>';
+      }).join('');
+
+      return '<div class="pipe-row">' +
+        '<div class="pipe-row-label" style="display:flex;align-items:center;">' +
+          '<div class="pipe-company-strip" style="background:' + color + '"></div>' +
+          '<div style="min-width:0">' +
+            '<div class="pipe-row-product">' + (item.product || '—') + '</div>' +
+            (item.genericName ? '<div class="pipe-row-generic">' + item.genericName + '</div>' : '') +
+            '<div class="pipe-row-indication">' + (item.indication || '') + '</div>' +
+          '</div>' +
+        '</div>' +
+        cells +
+        '</div>';
+    }).join('');
+
+    return '<div class="pipe-ta-section">' +
+      '<div class="pipe-ta-section-header">' +
+        '<div class="pipe-ta-section-title">' + ta + '</div>' +
+        '<div class="pipe-ta-divider"></div>' +
+      '</div>' +
+      rows +
+      '</div>';
+  }).join('');
+
+  feed.innerHTML = '<div class="pipe-chart-wrap">' + legend + headers + taSections + '</div>';
+}
+
+async function fetchPipelineData() {
+  const btn = document.getElementById('pipeLoadBtn');
+  btn.disabled = true;
+  const statusEl = document.getElementById('pipeStatus');
+  const today = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  let allAssets = [];
+
+  for (let i = 0; i < COMPANIES.length; i++) {
+    const company = COMPANIES[i];
+    const irConfig = IR_SOURCES[company.name];
+    statusEl.textContent = `(${i+1}/${COMPANIES.length}) Loading ${company.name} pipeline...`;
+
+    try {
+      const assets = await fetchCompanyPipeline(company, today, irConfig);
+      allAssets = allAssets.concat(assets);
+    } catch(e) {
+      console.error('Pipeline fetch error for', company.name, e);
+    }
+
+    if (i < COMPANIES.length - 1) await sleep(5000);
+  }
+
+  pipelineData = allAssets;
+  await cacheSet('lumos_pipeline', pipelineData);
+  buildPipeTAPills();
+  renderPipeline();
+  statusEl.textContent = `${pipelineData.length} pipeline assets loaded across ${COMPANIES.length} companies`;
+  btn.disabled = false;
+}
+
+async function fetchCompanyPipeline(company, today, irConfig) {
+  // Find pipeline source URL
+  const pipelineSource = irConfig?.sources?.find(s => /pipeline/i.test(s.label));
+  let sourceContent = '';
+
+  if (pipelineSource && !irConfig?.webSearchOnly) {
+    sourceContent = await fetchIRPage(pipelineSource.url);
+  }
+
+  const searchInstruction = sourceContent
+    ? `Use this content from ${company.name}'s official pipeline page:\n${sourceContent.substring(0, 7000)}`
+    : `Search for ${company.name}'s current R&D pipeline`;
+
+  const prompt = `You are a pharma pipeline analyst. Today: ${today}.
+
+${searchInstruction}
+
+Extract ALL pipeline assets for ${company.name} — every drug candidate in development including preclinical, Phase 1, Phase 2, Phase 3, NDA/BLA filed, and approved/marketed products relevant to their current pipeline strategy.
+
+Focus on: product name, indication, phase, therapeutic area, and next milestone.
+
+Return ONLY valid JSON, no markdown:
+{"assets":[{
+  "company":"${company.name}",
+  "product":"Brand name or compound ID (e.g. Dupixent, IMG-007, APG777)",
+  "genericName":"INN or generic name if known",
+  "indication":"Specific disease being treated — use exact clinical name e.g. Atopic Dermatitis, Asthma, COPD, Prurigo Nodularis, Alopecia Areata, Psoriasis, Hidradenitis Suppurativa, Crohn's Disease, Ulcerative Colitis, Rheumatoid Arthritis, SLE",
+  "therapeuticArea":"Use the specific disease indication as the category — e.g. Atopic Dermatitis, Asthma, COPD, Prurigo Nodularis, Alopecia Areata, Psoriasis, Hidradenitis Suppurativa, Oncology, Neurology, Rare Disease. NOT broad terms like Dermatology or Immunology.",
+  "phase":"Phase 1|Phase 2|Phase 3|NDA Filed|BLA Filed|Approved|Preclinical",
+  "modality":"e.g. monoclonal antibody, small molecule, gene therapy, bispecific",
+  "nextMilestone":"e.g. Ph3 data Q2 2026, FDA decision Q4 2026, or empty string"
+}]}
+
+Rules:
+- company must be exactly "${company.name}"
+- Include both investigational and recently approved products
+- therapeuticArea MUST be the specific indication (e.g. "Atopic Dermatitis") — never a broad area like "Dermatology" or "Immunology"
+- If one product has multiple indications, create a separate asset entry for each indication
+- Only include assets with confirmed development activity`;
+
+  const text = await claudeCall(prompt, 2000);
+  try {
+    const clean = text.replace(/\`\`\`json|\`\`\`/g, '').trim();
+    const match = clean.match(/\{[\s\S]*\}/);
+    if (!match) return [];
+    return JSON.parse(match[0]).assets || [];
+  } catch(e) {
+    console.error('Pipeline parse error for', company.name, e);
+    return [];
+  }
+}
+
+async function loadCachedPipeline() {
+  const cached = await cacheGet('lumos_pipeline');
+  if (cached && cached.data && cached.data.length > 0) {
+    pipelineData = cached.data;
+    buildPipeCompanyList();
+    buildPipeTAPills();
+    renderPipeline();
+    const statusEl = document.getElementById('pipeStatus');
+    if (statusEl) statusEl.textContent = 'Briefing data as of ' + formatCacheDate(cached.savedAt) + ' — click Refresh Pipeline to update';
+  }
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+  if (tab === 'conference' && confItems.length === 0) loadCachedConference();
+  if (tab === 'trials' && ctAllItems.length === 0) loadCachedTrials();
+  if (tab === 'calendar' && calEvents.length === 0) loadCachedCalendar();
+  if (tab === 'pipeline' && pipelineData.length === 0) loadCachedPipeline();
+}
+
+async function loadCachedConference() {
+  const cached = await cacheGet('lumos_conference');
+  if (cached && cached.data && cached.data.length > 0) {
+    confItems = cached.data;
+    buildConfCompanyList();
+    buildProductPills();
+    updateConfCounts();
+    renderConfFeed();
+    const statusEl = document.getElementById('confStatus');
+    statusEl.style.display = 'flex';
+    statusEl.innerHTML = '<span style="color:var(--muted)">Showing cached data from ' + formatCacheDate(cached.savedAt) + ' — click Run Conference Scan to refresh</span>';
+  }
+}
+
+function setConfYear(year, el) {
+  activeConfYear = year;
+  document.querySelectorAll('.year-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderConfFeed();
+}
+
+function setConfFilter(el, filter) {
+  activeConfFilter = filter;
+  document.querySelectorAll('.conf-filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderConfFeed();
+}
+
+function setConfCompany(name, el) {
+  if (activeConfCompany === name) {
+    activeConfCompany = null;
+    document.querySelectorAll('.conf-company-item').forEach(i => i.classList.remove('active'));
+  } else {
+    activeConfCompany = name;
+    document.querySelectorAll('.conf-company-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+  }
+  renderConfFeed();
+}
+
+function setConfProduct(product, el) {
+  if (activeConfProduct === product) {
+    activeConfProduct = null;
+    document.querySelectorAll('.product-pill').forEach(p => p.classList.remove('active'));
+  } else {
+    activeConfProduct = product;
+    document.querySelectorAll('.product-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+  }
+  renderConfFeed();
+}
+
+function buildConfCompanyList() {
+  const companies = [...new Set(confItems.map(i => i.company).filter(Boolean))].sort();
+  document.getElementById('confCompanyList').innerHTML = companies.map(c => {
+    const co = COMPANIES.find(x => x.name === c);
+    const color = co ? co.color : '#888';
+    return `<div class="company-item conf-company-item" onclick="setConfCompany('${c}',this)">
+      <div class="company-dot" style="background:${color}"></div>
+      <span>${c}</span>
+    </div>`;
+  }).join('');
+}
+
+function buildProductPills() {
+  // Gather all products found in results
+  const found = [...new Set(confItems.flatMap(i => i.products || []).filter(Boolean))];
+  // Merge fixed list + any extras not already in fixed list
+  const all = [...FIXED_PRODUCTS];
+  found.forEach(p => { if (!all.some(f => f.toLowerCase() === p.toLowerCase())) all.push(p); });
+  // Only show products that actually appear in current results
+  const active = all.filter(p => confItems.some(i => (i.products||[]).some(x => x.toLowerCase() === p.toLowerCase())));
+  const container = document.getElementById('productPills');
+  if (!active.length) { container.innerHTML = '<span style="font-size:12px;color:var(--muted)">None found</span>'; return; }
+  container.innerHTML = active.map(p =>
+    `<div class="product-pill ${activeConfProduct===p?'active':''}" onclick="setConfProduct('${p}',this)">${p}</div>`
+  ).join('');
+}
+
+function updateConfCounts() {
+  const filtered = getFilteredConfItems();
+  document.getElementById('cc-all').textContent = confItems.length;
+  ['aad','eadv','acaai','chest','aaaai'].forEach(c => {
+    const el = document.getElementById('cc-' + c);
+    if (el) el.textContent = confItems.filter(i => i.conference === c).length;
+  });
+  document.getElementById('confResultCount').textContent = filtered.length;
+}
+
+function getFilteredConfItems() {
+  let items = [...confItems];
+  if (activeConfYear !== 'all') items = items.filter(i => i.year === activeConfYear);
+  if (activeConfFilter !== 'all') items = items.filter(i => i.conference === activeConfFilter);
+  if (activeConfCompany) items = items.filter(i => i.company === activeConfCompany);
+  if (activeConfProduct) items = items.filter(i => (i.products||[]).some(p => p.toLowerCase() === activeConfProduct.toLowerCase()));
+  return items;
+}
+
+function renderConfFeed() {
+  const feed = document.getElementById('confFeed');
+  const items = getFilteredConfItems();
+  document.getElementById('confResultCount').textContent = items.length;
+  if (!items.length) {
+    feed.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">No presentations match your filters.</div></div>`;
+    return;
+  }
+  feed.innerHTML = items.map((item, idx) => `
+    <div class="conf-card" style="animation-delay:${idx*.04}s">
+      <div class="conf-meta">
+        <span class="conf-badge">${item.conference ? item.conference.toUpperCase() : 'CONF'} ${item.year || ''}</span>
+        <div class="company-logo-wrap">
+          ${companyLogoImg(item.company, 20)}
+          <span class="company-badge">${item.company}</span>
+        </div>
+        <span class="year-badge">${item.presentationType || 'Presentation'}</span>
+        ${(item.products||[]).map(p => `<span class="product-badge">${p}</span>`).join('')}
+      </div>
+      <div class="conf-title">${item.title}</div>
+      <div class="conf-summary">${item.summary}</div>
+      ${item.highlight ? `
+        <div class="key-takeaway">
+          <div style="font-family:monospace;font-size:10px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:5px;font-weight:700;">Clinical Significance</div>
+          ${item.highlight}
+        </div>` : ''}
+      <div class="conf-footer">
+        <div class="conf-source">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          ${item.source || ''}
+        </div>
+        <a href="${item.url}" class="conf-link" target="_blank">
+          View Source
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+      </div>
+    </div>`).join('');
+}
+
+function setConfStatus(msg) {
+  const el = document.getElementById('confStatus');
+  if (msg) { el.style.display = 'flex'; el.innerHTML = `<span style="display:inline-block;width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 1.5s infinite"></span>${msg}`; }
+  else { el.style.display = 'none'; }
+}
+
+// ── CONFERENCE SCANNER — THREE-TIER FETCH ─────────────────────────────────
+// Tier 1: Company IR press releases (direct fetch)
+// Tier 2: Targeted medical news search (dermatologytimes, healio, ajmc, etc.)
+// Tier 3: General web search fallback
+
+const CONF_NAMES = {
+  aad:   'American Academy of Dermatology (AAD)',
+  eadv:  'European Academy of Dermatology and Venereology (EADV)',
+  acaai: 'American College of Allergy, Asthma & Immunology (ACAAI)',
+  chest: 'American College of Chest Physicians (CHEST)',
+  aaaai: 'American Academy of Allergy, Asthma & Immunology (AAAAI)',
+};
+const CONF_SHORT = { aad:'AAD', eadv:'EADV', acaai:'ACAAI', chest:'CHEST', aaaai:'AAAAI' };
+
+// Medical news sites that cover congress presentations well
+const MEDICAL_NEWS_SITES = [
+  'dermatologytimes.com',
+  'healio.com',
+  'ajmc.com',
+  'mdedge.com',
+  'hcplive.com',
+  'physicianweekly.com',
+  'prnewswire.com',
+  'businesswire.com',
+  'globenewswire.com',
+].join(' OR site:');
+
+const CONF_JSON_SCHEMA = '{"items":[{"company":"exact company name","conference":"aad|eadv|acaai|chest|aaaai","year":"YYYY","presentationType":"Late-breaking Oral|Oral|Poster|Symposium|Industry Symposium","title":"exact presentation title","summary":"2-3 sentences on what was presented and key results","products":["product name e.g. Dupixent (dupilumab)"],"source":"publisher or site name","url":"https://real-url","highlight":"key clinical insight for pharma executive"}]}';
+
+function parseConfItems(text) {
+  try {
+    const clean = text.replace(/```json|```/g, '').trim();
+    const match = clean.match(/\{[\s\S]*\}/);
+    if (!match) return [];
+    return JSON.parse(match[0]).items || [];
+  } catch(e) { return []; }
+}
+
+// Tier 1: Fetch company press releases for congress mentions
+async function fetchConfFromIR(company, conferences, years) {
+  const irConfig = IR_SOURCES[company.name];
+  const newsSources = (irConfig?.sources || []).filter(s => /news|press|release|event/i.test(s.label));
+  if (!newsSources.length || irConfig?.webSearchOnly) return [];
+
+  const confList = conferences.map(c => CONF_NAMES[c]).join(', ');
+  const yearList = years.join(', ');
+
+  // Fetch press release pages
+  const pages = await Promise.all(newsSources.map(s => fetchIRPage(s.url)));
+  const combined = pages.filter(Boolean).join('\n\n').substring(0, 8000);
+  if (!combined.trim()) return [];
+
+  const prompt = `You are a pharma congress analyst. Today: ${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}.
+
+Below is press release content from ${company.name}'s official IR pages.
+
+Find ALL mentions of presentations, abstracts, posters, symposia, or data presentations at these congresses: ${confList}
+For years: ${yearList}
+
+Extract each confirmed presentation as a separate item.
+
+SOURCE:
+${combined}
+
+Return ONLY valid JSON, no markdown:
+${CONF_JSON_SCHEMA}
+
+Rules:
+- company must be exactly "${company.name}"
+- conference must be one of: aad, eadv, acaai, chest, aaaai
+- Only include confirmed presentations with real source URLs
+- Skip if no congress presentations found`;
+
+  const text = await claudeCall(prompt, 1500);
+  const items = parseConfItems(text);
+  console.log('[Conf IR] ' + company.name + ': ' + items.length + ' items from press releases');
+  return items;
+}
+
+// Tier 2: Targeted medical news search
+async function fetchConfFromMedNews(company, conferences, years) {
+  const confList = conferences.map(c => CONF_SHORT[c]).join(', ');
+  const yearList = years.join('/');
+  const prompt = `Pharma congress analyst. Search for ${company.name} presentations at ${confList} congresses in ${yearList}.
+
+Search specifically on medical news sites using: "${company.name}" (${conferences.map(c=>CONF_SHORT[c]).join(' OR ')}) ${years[0]} presentation OR abstract OR poster OR data
+Focus on: site:${MEDICAL_NEWS_SITES}
+
+Return ONLY valid JSON, no markdown:
+${CONF_JSON_SCHEMA}
+
+Rules:
+- company must be exactly "${company.name}"
+- Only include items found on medical news sites with real URLs
+- Skip if nothing found`;
+
+  const text = await claudeWebSearch(prompt, 1500);
+  const items = parseConfItems(text);
+  console.log('[Conf MedNews] ' + company.name + ': ' + items.length + ' items from medical news');
+  return items;
+}
+
+// Tier 3: General web search fallback
+async function fetchConfFromWebSearch(company, conferences, years) {
+  const confList = conferences.map(c => CONF_SHORT[c]).join(', ');
+  const yearList = years.join(', ');
+  const prompt = `Pharma congress analyst. Search for ${company.name} presentations at ${confList} in ${yearList}.
+Search: "${company.name}" (${conferences.map(c=>CONF_SHORT[c]).join(' OR ')}) ${years[0]} abstract data presentation
+
+Return ONLY valid JSON, no markdown:
+${CONF_JSON_SCHEMA}
+
+- company must be exactly "${company.name}"
+- Only include verified items with real URLs`;
+
+  const text = await claudeWebSearch(prompt, 1500);
+  const items = parseConfItems(text);
+  console.log('[Conf Web] ' + company.name + ': ' + items.length + ' items from web search');
+  return items;
+}
+
+// Main per-company conference fetch with three-tier approach
+async function fetchCompanyConferences(company, conferences, years) {
+  let items = [];
+
+  // Tier 1: IR press releases
+  try {
+    const irItems = await fetchConfFromIR(company, conferences, years);
+    items = items.concat(irItems);
+  } catch(e) { console.warn('Conf IR fetch failed for ' + company.name, e); }
+
+  // Tier 2: Medical news supplement
+  try {
+    const newsItems = await fetchConfFromMedNews(company, conferences, years);
+    // Deduplicate by title
+    const titles = new Set(items.map(i => i.title));
+    items = items.concat(newsItems.filter(i => !titles.has(i.title)));
+  } catch(e) { console.warn('Conf news fetch failed for ' + company.name, e); }
+
+  // Tier 3: Web search fallback only if nothing found yet
+  if (items.length === 0) {
+    try {
+      const webItems = await fetchConfFromWebSearch(company, conferences, years);
+      items = items.concat(webItems);
+    } catch(e) { console.warn('Conf web fetch failed for ' + company.name, e); }
+  }
+
+  return items.filter(i => i.url && i.url.startsWith('http'));
+}
+
+async function fetchConference() {
+  const btn = document.getElementById('confLoadBtn');
+  btn.disabled = true;
+  document.getElementById('confFeed').innerHTML = '';
+  confItems = [];
+
+  const years = ['2026', '2025', '2024'];
+  const conferences = ['aad', 'eadv', 'acaai', 'chest', 'aaaai'];
+  let allNew = [];
+
+  for (let i = 0; i < COMPANIES.length; i++) {
+    const company = COMPANIES[i];
+    setConfStatus('(' + (i+1) + '/' + COMPANIES.length + ') Scanning ' + company.name + ' — checking IR pages, medical news, and web...');
+
+    try {
+      const items = await fetchCompanyConferences(company, conferences, years);
+      allNew = allNew.concat(items);
+      confItems = allNew;
+      buildConfCompanyList();
+      buildProductPills();
+      updateConfCounts();
+      renderConfFeed();
+    } catch(e) {
+      console.error('Company conf error for ' + company.name, e);
+    }
+
+    if (i < COMPANIES.length - 1) {
+      for (let s = 15; s > 0; s--) {
+        setConfStatus('(' + (i+1) + '/' + COMPANIES.length + ') ' + company.name + ' complete — next in ' + s + 's...');
+        await sleep(1000);
+      }
+    }
+  }
+
+  if (allNew.length > 0) {
+    await cacheSet('lumos_conference', allNew);
+  }
+
+  setConfStatus('');
+  btn.disabled = false;
+  if (!allNew.length) {
+    document.getElementById('confFeed').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text" style="color:#ef4444">No congress presentations found. Adjust filters or re-run scan.</div></div>';
+  }
+}
+
+init();
+</script>
+</div><!-- /panel-intel -->
+
+
+<!-- CONFERENCE TAB -->
+<div id="panel-conference" class="tab-panel">
+<div class="conf-layout">
+  <aside class="conf-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Year</div>
+      <div class="year-pills">
+        <div class="year-pill active" onclick="setConfYear('all',this)">All</div>
+        <div class="year-pill" onclick="setConfYear('2026',this)">2026</div>
+        <div class="year-pill" onclick="setConfYear('2025',this)">2025</div>
+        <div class="year-pill" onclick="setConfYear('2024',this)">2024</div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Conference</div>
+      <div class="conf-filter-chip active" onclick="setConfFilter(this,'all')"><span class="chip-label">All Congresses</span><span class="chip-count" id="cc-all">0</span></div>
+      <div class="conf-filter-chip" onclick="setConfFilter(this,'aad')"><span class="chip-label">AAD</span><span class="chip-count" id="cc-aad">0</span></div>
+      <div class="conf-filter-chip" onclick="setConfFilter(this,'eadv')"><span class="chip-label">EADV</span><span class="chip-count" id="cc-eadv">0</span></div>
+      <div class="conf-filter-chip" onclick="setConfFilter(this,'acaai')"><span class="chip-label">ACAAI</span><span class="chip-count" id="cc-acaai">0</span></div>
+      <div class="conf-filter-chip" onclick="setConfFilter(this,'chest')"><span class="chip-label">CHEST</span><span class="chip-count" id="cc-chest">0</span></div>
+      <div class="conf-filter-chip" onclick="setConfFilter(this,'aaaai')"><span class="chip-label">AAAAI</span><span class="chip-count" id="cc-aaaai">0</span></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Company</div>
+      <div id="confCompanyList"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Product</div>
+      <div class="product-pills" id="productPills"><span style="font-size:12px;color:var(--muted)">Run scan to populate</span></div>
+    </div>
+  </aside>
+  <div class="conf-main">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="results-info">Showing <strong id="confResultCount">0</strong> congress presentations</div>
+      <button class="conf-load-btn" id="confLoadBtn" style="width:auto;padding:8px 20px;" onclick="fetchConference()">
+        <span id="confLoadIcon">⟳</span> Run Conference Scan
+      </button>
+    </div>
+    <div id="confStatus" style="display:none;" class="conf-status"></div>
+    <div id="confFeed"></div>
+  </div>
+</div>
+</div><!-- /panel-conference -->
+
+
+<!-- CLINICAL TRIALS TAB -->
+<div id="panel-trials" class="tab-panel">
+<div class="ct-layout">
+  <aside class="ct-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Therapeutic Focus</div>
+      <div class="ct-product-pills" id="ctProductPills">
+        <!-- populated from FIXED_PRODUCTS -->
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Status</div>
+      <div class="status-pills">
+        <div class="status-pill active" onclick="setCTFilter('status','all',this)">All</div>
+        <div class="status-pill" onclick="setCTFilter('status','RECRUITING',this)">Recruiting</div>
+        <div class="status-pill" onclick="setCTFilter('status','ACTIVE_NOT_RECRUITING',this)">Active</div>
+        <div class="status-pill" onclick="setCTFilter('status','NOT_YET_RECRUITING',this)">Not Yet</div>
+        <div class="status-pill" onclick="setCTFilter('status','COMPLETED',this)">Completed</div>
+        <div class="status-pill" onclick="setCTFilter('status','TERMINATED',this)">Terminated</div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Phase</div>
+      <div class="phase-pills">
+        <div class="phase-pill active" onclick="setCTFilter('phase','all',this)">All</div>
+        <div class="phase-pill" onclick="setCTFilter('phase','PHASE1',this)">Phase 1</div>
+        <div class="phase-pill" onclick="setCTFilter('phase','PHASE2',this)">Phase 2</div>
+        <div class="phase-pill" onclick="setCTFilter('phase','PHASE3',this)">Phase 3</div>
+        <div class="phase-pill" onclick="setCTFilter('phase','PHASE4',this)">Phase 4</div>
+      </div>
+    </div>
+  </aside>
+  <div class="ct-main">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="results-info">Showing <strong id="ctResultCount">0</strong> active trials</div>
+      <button class="ct-load-btn" id="ctLoadBtn" onclick="fetchAllTrials()">⟳ Load Pipeline Data</button>
+    </div>
+    <div id="ctStatus" style="display:none;font-family:monospace;font-size:13px;color:var(--text-secondary);letter-spacing:1px;margin-bottom:20px;align-items:center;gap:8px;"></div>
+    <div id="ctFeed"></div>
+  </div>
+</div>
+</div><!-- /panel-trials -->
+
+
+<!-- CALENDAR PANEL -->
+<div id="panel-calendar" class="tab-panel">
+<div class="cal-layout">
+
+  <!-- Sidebar -->
+  <aside class="cal-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Companies</div>
+      <div id="calCompanyList"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Event Type</div>
+      <div class="cal-type-pills">
+        <div class="cal-type-pill active" onclick="setCalType('all',this)">All</div>
+        <div class="cal-type-pill" onclick="setCalType('earnings',this)">Earnings</div>
+        <div class="cal-type-pill" onclick="setCalType('conference',this)">Conference</div>
+        <div class="cal-type-pill" onclick="setCalType('presentation',this)">Presentation</div>
+        <div class="cal-type-pill" onclick="setCalType('agm',this)">Annual General Meeting</div>
+        <div class="cal-type-pill" onclick="setCalType('readout',this)">Data Readout</div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">View</div>
+      <div class="cal-type-pills">
+        <div class="cal-type-pill active" onclick="setCalView('upcoming',this)">Upcoming</div>
+        <div class="cal-type-pill" onclick="setCalView('month',this)">Monthly</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="cal-main">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="results-info">Showing <strong id="calResultCount">0</strong> upcoming events</div>
+      <button class="cal-load-btn" id="calLoadBtn" onclick="fetchCalendarEvents()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Refresh Calendar
+      </button>
+    </div>
+    <div class="cal-status" id="calStatus"></div>
+
+    <!-- Month view (hidden by default) -->
+    <div id="calMonthView" style="display:none;">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="calChangeMonth(-1)">&#8592;</button>
+        <div class="cal-month-label" id="calMonthLabel"></div>
+        <button class="cal-nav-btn" onclick="calChangeMonth(1)">&#8594;</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <!-- Upcoming list view (default) -->
+    <div id="calUpcomingView">
+      <div class="cal-upcoming-label" id="calUpcomingLabel">Upcoming Events</div>
+      <div id="calFeed"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Event detail modal -->
+<div class="cal-modal-overlay" id="calModal" onclick="closeCalModal(event)">
+  <div class="cal-modal" id="calModalInner">
+    <button class="cal-modal-close" onclick="closeCalModal()">✕</button>
+    <div id="calModalContent"></div>
+  </div>
+</div>
+
+</div><!-- /panel-calendar -->
+
+
+<!-- PIPELINE PANEL -->
+<div id="panel-pipeline" class="tab-panel">
+<div class="pipe-layout">
+
+  <!-- Sidebar -->
+  <aside class="pipe-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Company</div>
+      <div id="pipeCompanyList"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Disease / Indication</div>
+      <div class="pipe-ta-pills" id="pipeTAPills">
+        <div class="pipe-ta-pill active" onclick="setPipeTA('all',this)">All</div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Phase</div>
+      <div class="pipe-ta-pills" id="pipePhasePills">
+        <div class="pipe-ta-pill active" onclick="setPipePhase('all',this)">All</div>
+        <div class="pipe-ta-pill" onclick="setPipePhase('preclinical',this)">Preclinical</div>
+        <div class="pipe-ta-pill" onclick="setPipePhase('1',this)">Phase 1</div>
+        <div class="pipe-ta-pill" onclick="setPipePhase('2',this)">Phase 2</div>
+        <div class="pipe-ta-pill" onclick="setPipePhase('3',this)">Phase 3</div>
+        <div class="pipe-ta-pill" onclick="setPipePhase('nda',this)">NDA / BLA Filed</div>
+        <div class="pipe-ta-pill" onclick="setPipePhase('approved',this)">Approved</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="pipe-main">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div class="results-info">Showing <strong id="pipeResultCount">0</strong> pipeline assets</div>
+      <button class="pipe-load-btn" id="pipeLoadBtn" onclick="fetchPipelineData()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Refresh Pipeline
+      </button>
+    </div>
+    <div class="pipe-status" id="pipeStatus"></div>
+    <div id="pipeFeed" style="overflow-x:auto;"></div>
+  </div>
+</div>
+<div class="pipe-tooltip" id="pipeTooltip"></div>
+</div><!-- /panel-pipeline -->
+
+</div><!-- /appShell -->
+</body>
+</html>
